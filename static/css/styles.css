@@ -1,0 +1,987 @@
+/* General Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Body Styling */
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f4f4f9;
+    color: #333;
+    line-height: 1.6;
+    display: flex;
+    justify-content: center; /* Center horizontally */
+    align-items: center;    /* Center vertically */
+    min-height: 100vh;      /* Ensure full viewport height */
+    padding: 0 15px;
+}
+
+/* Container for Layout */
+.container {
+    width: 100%;
+    padding: 20px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease; /* Add smooth transitions */
+}
+
+.container:hover {
+    transform: scale(1.02); /* Slightly enlarge on hover */
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2); /* Add depth */
+}
+
+/* Form styling */
+form {
+    display: flex;
+    flex-direction: column;
+}
+
+label {
+    font-weight: bold;
+    font-size: 1rem;
+    color: #495057;
+}
+
+input[type="text"], input[type="file"] {
+    padding: 10px;
+    font-size: 1rem;
+    border: 1px solid #ced4da;
+    border-radius: 5px;
+    width: 100%;
+    transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+input[type="text"]:focus, input[type="file"]:focus {
+    border-color: #80bdff;
+    outline: none;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Highlight input on focus */
+}
+
+/* Header Styling */
+header {
+    background: #000000;
+    color: #fff;
+    padding: 15px 20px;
+    border-radius: 8px 8px 0 0;
+    text-align: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+header:hover {
+    transform: scale(1.02); /* Subtle enlargement */
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2); /* Add depth on hover */
+}
+
+header h1 {
+    font-size: 2rem;
+    font-weight: bold;
+}
+
+/* Links */
+a {
+    color: #000000;
+    text-decoration: none;
+    transition: color 0.3s ease, transform 0.3s ease;
+}
+
+a:hover {
+    text-decoration: none;
+}
+
+/* Navigation Bar */
+nav {
+    margin: 20px 0;
+    text-align: center;
+}
+
+nav a {
+    margin: 0 15px;
+    padding: 8px 15px;
+    background: #000000;
+    color: white;
+    border-radius: 4px;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+    transition: background 0.3s ease, transform 0.3s ease;
+}
+
+nav a:hover {
+    transform: scale(1.02); /* Make nav links pop */
+}
+
+/* Headings */
+h1, h2, h3 {
+    color: #000000;
+    margin-bottom: 20px;
+}
+
+/* Lists */
+ul {
+    list-style: none;
+    margin: 20px 0;
+    padding: 0;
+}
+
+ul li {
+    padding: 10px;
+    border: 1px solid #ddd;
+    background: #f9f9f9;
+    margin-bottom: 10px;
+    border-radius: 4px;
+    transition: background 0.3s ease, transform 0.3s ease;
+}
+
+ul li:hover {
+    background: #f0f8ff;
+    transform: scale(1.02); /* Enhance list item hover */
+}
+
+/* Buttons */
+button, .btn {
+    display: inline-block;
+    padding: 10px 20px;
+    background: #000000;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+button:hover, .btn:hover {
+    background: #454343;
+    transform: scale(1.02); /* Highlight button */
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2); /* Add shadow on hover */
+}
+
+/* Footer */
+footer {
+    text-align: center;
+    margin-top: 20px;
+    padding: 10px 0;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+/* Table Styling */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+}
+
+table th, table td {
+    padding: 10px;
+    text-align: left;
+    border: 1px solid #ddd;
+}
+
+table th {
+    background: #000000;
+    color: #fff;
+    transition: transform 0.3s ease;
+}
+
+table th:hover {
+    transform: scale(1.02); /* Slight hover effect for headers */
+}
+
+table tr:nth-child(even) {
+    background: #f9f9f9;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    header h1 {
+        font-size: 1.5rem;
+    }
+
+    nav a {
+        display: block;
+        margin: 10px 0;
+    }
+
+    .container {
+        padding: 10px;
+    }
+}
+
+/* Container for upload page */
+.upload-container {
+    max-width: 600px;
+    margin: 50px auto;
+    padding: 20px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+/* Form styling */
+.upload-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+/* Labels */
+.form-label {
+    font-weight: bold;
+    font-size: 1rem;
+    color: #495057;
+    text-align: left;
+}
+
+/* Input fields */
+.form-input {
+    padding: 10px;
+    font-size: 1rem;
+    border: 1px solid #ced4da;
+    border-radius: 5px;
+    width: 100%;
+}
+
+.form-input:focus {
+    border-color: #80bdff;
+    outline: none;
+}
+
+/* Button styling */
+.upload-btn {
+    display: inline-block;
+    padding: 10px 20px;
+    background: #000000;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.upload-btn:hover {
+    background: #454343;
+    color: white;
+}
+
+/* Back link styling */
+.back-link {
+    display: inline-block;
+    margin-top: 15px;
+    font-size: 1rem;
+    color: #000000;
+    text-decoration: none;
+    padding: 8px 15px;
+    background: #f4f4f4;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    transition: background 0.3s ease;
+}
+
+.back-link:hover {
+    background: #e9ecef;
+    color: #333;
+}
+/* Dashboard container */
+.teacher-dashboard {
+    max-width: 800px;
+    margin: 50px auto;
+    padding: 20px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Dashboard title */
+.dashboard-title {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 20px;
+    text-align: center;
+    color: #333;
+}
+
+/* Flash messages */
+.flash-messages {
+    margin-bottom: 20px;
+    padding: 10px;
+    background: #d9edf7;
+    border: 1px solid #bce8f1;
+    border-radius: 4px;
+}
+
+.message-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.message-item {
+    color: #31708f;
+    font-size: 1rem;
+}
+
+/* Section titles */
+.section-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 15px;
+    color: #333;
+}
+
+/* Classroom list */
+.classroom-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 20px 0;
+}
+
+.classroom-item {
+
+    margin-bottom: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: #f9f9f9;
+    transition: background 0.3s ease;
+    padding: 10px;
+}
+
+.classroom-item:hover {
+    background: #f0f8ff;
+}
+
+.classroom-link {
+    text-decoration: none;
+    color: #333;
+    font-size: 1rem;
+    display: block;
+}
+
+.classroom-link:hover {
+    text-decoration: none;
+    color: #000;
+}
+
+/* Action buttons */
+.action-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.btn-add-classroom {
+    background: #000000;
+    color: #fff;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 1rem;
+    transition: background 0.3s ease;
+}
+
+.btn-add-classroom:hover {
+    background-color: #454343; /* Slightly lighter shade of black */
+    color: white;         
+}
+
+.btn-logout {
+    background: #000000;
+    color: #fff;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 1rem;
+    transition: background 0.3s ease;
+}
+
+.btn-logout:hover {
+    background-color: #454343; /* Slightly lighter shade of black */
+    color: white;         
+}
+
+/* Classroom container */
+.classroom-container {
+    max-width: 800px;
+    margin: 50px auto;
+    padding: 20px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Classroom title */
+.classroom-title {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 20px;
+    text-align: center;
+    color: #333;
+}
+
+/* Add project button */
+.btn-add-project {
+    display: inline-block;
+    background: #000000;
+    color: #fff;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 1rem;
+    margin-bottom: 20px;
+    transition: background 0.3s ease;
+}
+
+.btn-add-project:hover {
+    background: #454343;
+    color: #fff;
+}
+
+/* Projects section title */
+.project-section-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 15px;
+    color: #333;
+}
+
+/* Project list */
+.project-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 20px 0;
+}
+
+.project-item {
+    margin-bottom: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: #f9f9f9;
+    transition: background 0.3s ease;
+    padding: 10px;
+}
+
+.project-item:hover {
+    background: #f0f8ff;
+}
+
+.project-link {
+    text-decoration: none;
+    color: #333;
+    font-size: 1rem;
+    display: block;
+}
+
+.project-link:hover {
+    text-decoration: none;
+    color: #000;
+}
+
+/* No projects message */
+.no-projects-message {
+    color: #999;
+    font-style: italic;
+    margin-top: 10px;
+}
+
+/* Back button */
+.btn-back {
+    display: inline-block;
+    background: #000000;
+    color: #fff;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 1rem;
+    transition: background 0.3s ease;
+}
+
+.btn-back:hover {
+    background: #454343;
+    color: white;
+}
+/* Add project container */
+.add-project-container {
+    max-width: 600px;
+    margin: 50px auto;
+    padding: 20px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+/* Form styles */
+.add-project-form {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 15px;
+}
+
+/* Label styles */
+.form-label {
+    font-size: 1rem;
+    font-weight: bold;
+    color: #333;
+    text-align: left;
+}
+
+/* Input field */
+.form-input {
+    font-size: 1rem;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.form-input:focus {
+    border-color: #434343;
+    outline: none;
+}
+
+/* Submit button */
+.btn-submit {
+    background: #000000;
+    color: #fff;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.btn-submit:hover {
+    
+    background: #454343;
+    color: #fff;
+}
+
+/* Project container */
+.project-container {
+    max-width: 800px;
+    margin: 50px auto;
+    padding: 20px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Title styles */
+.project-title {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+/* Teacher section */
+.add-team-btn {
+    margin: 20px auto;
+    padding: 10px 15px;
+    font-size: 1rem;
+    border-radius: 4px;
+    transition: background 0.3s ease;
+}
+
+.add-team-btn:hover {
+    background: #454343;
+    color: #fff;
+}
+
+.teams-header {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #555;
+    text-align: center;
+}
+
+/* Team list styles */
+.teams-list {
+    list-style: none;
+    padding: 0;
+    margin: 20px 0;
+}
+
+.team-item {
+
+    margin-bottom: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: #f9f9f9;
+    transition: background 0.3s ease;
+    padding: 10px;
+}
+
+.team-item:hover {
+    background: #f8f9fa;
+}
+
+.team-link {
+    text-decoration: none;
+    color: #333;
+    font-size: 1rem;
+    display: block;
+}
+
+.team-link:hover {
+    text-decoration: none;
+    color: #000;
+}
+
+/* No teams message */
+.no-teams-message {
+    text-align: center;
+    font-size: 1.2rem;
+    color: #666;
+}
+
+/* Student section */
+.student-team-header {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin: 20px 0;
+    color: #333;
+    text-align: center;
+}
+
+.view-team-btn {
+    margin: 20px auto;
+    padding: 10px 15px;
+    font-size: 1rem;
+    border-radius: 4px;
+    background: #000000;
+    color: #fff;
+    text-align: center;
+    text-decoration: none;
+    transition: background 0.3s ease;
+}
+
+.view-team-btn:hover {
+    background: #454343;
+    color: white;
+}
+
+/* No team assigned message */
+.no-team-assigned-message {
+    text-align: center;
+    font-size: 1.2rem;
+    color: #666;
+}
+
+/* Back button */
+.back-btn {
+    padding: 10px 15px;
+    font-size: 1rem;
+    border-radius: 4px;
+    background: #000000;
+    color: #fff;
+    text-decoration: none;
+    text-align: center;
+    transition: background 0.3s ease;
+}
+
+.back-btn:hover {
+    background: #454343;
+    color: white;
+}
+
+/* Container for the Add Team page */
+.add-team-container {
+    max-width: 800px;
+    margin: 50px auto;
+    padding: 20px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Title */
+.add-team-title {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+/* Form container */
+.add-team-form {
+    margin-bottom: 30px;
+}
+
+/* Label styles */
+.form-label {
+    display: block;
+    font-size: 1.1rem;
+    margin-bottom: 8px;
+    color: #555;
+}
+
+/* Input field */
+.form-input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 20px;
+    font-size: 1rem;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+}
+
+/* Header for selecting students */
+.select-students-header {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #555;
+    margin-bottom: 10px;
+}
+
+/* Label for each student */
+.student-label {
+    font-size: 1.1rem;
+    color: #333;
+    display: block;
+}
+
+/* Checkbox input */
+.student-checkbox {
+    margin-right: 10px;
+}
+
+/* Display name of student */
+.student-name {
+    font-weight: normal;
+}
+
+/* Button for submitting the form */
+.submit-team-btn {
+
+    margin: 5px auto;
+    padding: 10px 15px;
+    font-size: 1rem;
+    border-radius: 4px;
+    transition: background 0.3s ease;
+}
+
+.submit-team-btn:hover {
+    background: #454343;
+    color: white;
+}
+
+/* Back button */
+.back-btn {
+    padding: 10px 15px;
+    font-size: 1rem;
+    border-radius: 4px;
+    background: #000000;
+    color: #fff;
+    text-decoration: none;
+    text-align: center;
+    transition: background 0.3s ease;
+}
+
+.back-btn:hover {
+    background: #454343;
+    color: white;
+}
+
+/* Container for the Team view page */
+.team-view-container {
+    max-width: 800px;
+    margin: 50px auto;
+    padding: 20px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Title for Team */
+.team-title {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+/* Title for Project */
+.project-title {
+    font-size: 1.5rem;
+    font-weight: normal;
+    color: #555;
+    margin-bottom: 10px;
+}
+
+/* Title for Classroom */
+.classroom-title {
+    font-size: 1.3rem;
+    font-weight: normal;
+    color: #555;
+    margin-bottom: 20px;
+}
+
+/* Title for team members list */
+.team-members-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #555;
+    margin-bottom: 10px;
+}
+
+/* List of team members */
+.team-members-list {
+    list-style-type: none;
+    padding-left: 0;
+}
+
+.team-member {
+    font-size: 1.1rem;
+    color: #333;
+    margin-bottom: 8px;
+}
+
+/* Message for no members in the team */
+.no-members {
+    font-size: 1.1rem;
+    color: #888;
+}
+
+/* Back buttons container */
+.back-buttons {
+    margin-top: 20px;
+}
+
+/* Style for the back buttons */
+.back-btn {
+    padding: 10px 15px;
+    font-size: 1rem;
+    border-radius: 4px;
+    background: #000000;
+    color: #fff;
+    text-decoration: none;
+    text-align: center;
+    transition: background 0.3s ease;
+}
+
+.back-btn:hover {
+    background: #454343;
+    color: white;
+}
+
+/* Container for the Student Dashboard */
+.student-dashboard-container {
+    max-width: 900px;
+    margin: 50px auto;
+    padding: 20px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Title for Student Dashboard */
+.dashboard-title {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+/* Flash message */
+.flash-message {
+    margin-bottom: 20px;
+}
+
+/* Assigned Classrooms Section */
+.assigned-classrooms {
+    margin-bottom: 30px;
+}
+
+.assigned-classrooms-title {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 15px;
+}
+
+/* List of classrooms */
+.classrooms-list {
+    list-style-type: none;
+    padding-left: 0;
+}
+
+.classroom-item {
+    font-size: 1.2rem;
+    color: #555;
+    margin-bottom: 15px;
+}
+
+/* Links for classroom names */
+.classroom-link {
+    text-decoration: none;
+    color: #000000;
+}
+
+.classroom-link:hover {
+    text-decoration: none;
+}
+
+/* List of projects within each classroom */
+.projects-list {
+    list-style-type: none;
+    padding-left: 0;
+    margin-top: 10px;
+}
+
+.project-item {
+    font-size: 1.1rem;
+    color: #555;
+}
+
+/* Add Team button */
+.add-team-btn {
+
+    margin: 20px auto;
+    padding: 10px 15px;
+    font-size: 1rem;
+    border-radius: 4px;
+    transition: background 0.3s ease;
+}
+
+.add-team-btn:hover {
+    background: #454343;
+    color: white;
+}
+
+/* Logout Button */
+.btn-logout {
+    display: inline-block;
+    padding: 10px 15px;
+    font-size: 1rem;
+    border-radius: 4px;
+    background: #000000;
+    color: #fff;
+    text-decoration: none;
+    text-align: center;
+    transition: background 0.3s ease;
+}
+
+.btn-logout:hover {
+    background: #454343;
+    color: white;
+}
+
+

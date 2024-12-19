@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Creative Assistant</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0-alpha1/css/bootstrap.min.css">
+    <style>
+body {
+    display: flex;
+    justify-content: center; /* Horizontally center */
+    align-items: center;    /* Vertically center */
+    min-height: 100vh;      /* Ensure the body covers the full height of the viewport */
+    margin: 0;              /* Remove default margin */
+    background-color: #f0f0f0; /* Optional: Add background color for contrast */
+}
+
+.login-container {
+    max-width: 400px;
+    width: 100%;            /* Ensure the container adapts to small screens */
+    padding: 30px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.login-container h2 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.btn-google {
+    background-color: #000000; /* Button color remains black */
+    color: white;             /* Text color */
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease; /* Smooth transitions */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+}
+
+.btn-google:hover {
+    background-color: #454343; /* Slightly lighter shade of black */
+    color: white;         
+    transform: scale(1.05);    /* Slight enlargement */
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2); /* Stronger shadow for hover effect */
+}
+
+.btn-google:active {
+    transform: scale(0.98);    /* Slight shrink on click */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Reset shadow */
+}
+
+    </style>
+</head>
+<body>
+
+<div class="login-container">
+    <h2>Creative Assistant</h2>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="alert alert-danger" role="alert">
+                {{ messages[0] }}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Google Login Button -->
+    <button id="google-login" class="btn btn-google" onclick="googleLogin()">Login with Google</button>
+
+</div>
+
+<!-- Include the Firebase SDK -->
+<script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.1.1/firebase-app.js';
+    import { getAuth, GoogleAuthProvider, signInWithPopup } from 'https://www.gstatic.com/firebasejs/9.1.1/firebase-auth.js';
+
+    // Firebase configuration
+    const firebaseConfig = {
+        apiKey: "AIzaSyCs-xerrIr0KpnCTihTX-GowGDAZbRZFvA",
+        authDomain: "creative-assistant-j.firebaseapp.com",
+        databaseURL: "https://creative-assistant-j-default-rtdb.firebaseio.com",
+        projectId: "creative-assistant-j",
+        storageBucket: "creative-assistant-j.firebasestorage.app",
+        messagingSenderId: "414003942125",
+        appId: "1:414003942125:web:d1400f5fa9358683f832e4",
+        measurementId: "G-NJWKCE24C4"
+        };
+
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
+
+    // Google login function
+    function googleLogin() {
+        signInWithPopup(auth, provider)
+            .then((result) => {
+                const user = result.user;
+                const token = user.getIdToken();  // Get Firebase ID token
+
+                token.then(idToken => {
+                    console.log("Google login ID token: ", idToken);
+                    fetch('/google-login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ token: idToken })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        console.log('Backend response:', data);
+                        if (data.success) {
+                            if (data.role === 'teacher') {
+                                window.location.href = '/teachers_home';  // Redirect to teacher's home page
+                            } else if (data.role === 'student') {
+                                window.location.href = '/students_home';  // Redirect to student's home page
+                            } else {
+                                console.log('Invalid role:', data.role);
+                            }
+                        } else {
+                            console.log('Login failed: ', data);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error during login:', error);
+                    });
+                }).catch(err => {
+                    console.error('Error fetching ID token:', err);
+                });
+            })
+            .catch((error) => {
+                console.log('Google login failed:', error);
+            });
+    }
+
+    // Ensure the script is loaded and googleLogin function is defined before use
+    window.onload = () => {
+        document.getElementById("google-login").onclick = googleLogin;
+    };
+</script>
+
+
+
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0-alpha1/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

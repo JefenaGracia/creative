@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container student-dashboard-container">
+    <h1 class="dashboard-title">Student Dashboard</h1>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="alert alert-danger flash-message" role="alert">
+                {{ messages[0] }}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <div class="assigned-classrooms">
+        <h3 class="assigned-classrooms-title">Assigned Classrooms</h3>
+        <ul class="list-group classrooms-list">
+            {% for class_name, projects in classrooms.items() %}
+                <li class="list-group-item classroom-item">
+                    <a href="{{ url_for('classroom_view', class_name=class_name) }}" class="classroom-link">
+                        <strong>{{ class_name }}</strong>
+                    </a>
+                    <ul class="projects-list">
+                        {% for project in projects %}
+                            <li class="project-item">{{ project }}</li>
+                        {% endfor %}
+                    </ul>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <!-- Show 'Add Team' button only for teachers -->
+    {% if session['role'] == 'teacher' %}
+        <a href="{{ url_for('add_team') }}" class="btn btn-primary add-team-btn">Add Team</a>
+    {% endif %}
+
+    <button class="btn btn-logout" onclick="window.location.href='/logout'">Logout</button>
+</div>
+{% endblock %}

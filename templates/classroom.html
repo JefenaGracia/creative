@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container classroom-container">
+    <h1 class="classroom-title">Classroom: {{ class_name }}</h1>
+
+    <!-- Show Add Project button only if the user is a teacher -->
+    {% if session['role'] == 'teacher' %}
+        <a href="{{ url_for('add_project', class_name=class_name) }}" class="btn btn-add-project">Add Project</a>
+    {% endif %}
+
+    <h2 class="project-section-title">List of projects</h2>
+    <ul class="project-list">
+        {% for project_name in projects %}
+            <li class="project-item">
+                <a href="{{ url_for('project_view', class_name=class_name, project_name=project_name) }}" class="project-link">{{ project_name }}</a>
+            </li>
+        {% else %}
+            <li class="no-projects-message">No projects available.</li>
+        {% endfor %}
+    </ul>
+
+    <a href="{{ url_for('teachers_home') }}" class="btn btn-back">Back</a>
+</div>
+{% endblock %}

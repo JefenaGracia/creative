@@ -1,0 +1,18 @@
+<!-- upload.html -->
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container upload-container">
+    <form method="POST" enctype="multipart/form-data" class="upload-form">
+        <label for="class_name" class="form-label">Class Name:</label>
+        <input type="text" id="class_name" name="class_name" class="form-input" required>
+
+        <label for="student_file" class="form-label">Student File (CSV or Excel):</label>
+        <input type="file" id="student_file" name="student_file" class="form-input" accept=".csv, .xls, .xlsx" required>
+
+        <button type="submit" class="btn upload-btn">Upload</button>
+    </form>
+
+    <a href="{{ url_for('teachers_home') }}" class="back-link">Back</a>
+</div>
+{% endblock %}

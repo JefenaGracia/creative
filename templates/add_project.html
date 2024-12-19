@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container add-project-container">
+    <form method="POST" action="{{ url_for('add_project', class_name=class_name) }}" class="add-project-form">
+        <label for="project_name" class="form-label">Enter project name:</label>
+        <input type="text" id="project_name" name="project_name" class="form-input" required>
+        <button type="submit" class="btn btn-submit">Add Project</button>
+    </form>
+</div>
+{% endblock %}

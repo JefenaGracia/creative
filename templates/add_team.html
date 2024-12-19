@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container add-team-container">
+    <h1 class="add-team-title">Add Team</h1>
+
+    <form method="POST" class="add-team-form">
+        <label for="team_name" class="form-label">Enter team name:</label>
+        <input type="text" id="team_name" name="team_name" class="form-input" required>
+        
+        <h3 class="select-students-header">Select Students:</h3>
+        {% for student in students %}
+            <label class="student-label">
+                <input type="checkbox" name="students" value="{{ student['email'] }}" class="student-checkbox">
+                <span class="student-name">{{ student['lastName'] }}, {{ student['firstName'] }}</span>
+            </label>
+            <br>
+        {% endfor %}
+        
+        <button type="submit" class="btn btn-primary submit-team-btn">Submit team</button>
+    </form>
+
+    <a href="{{ url_for('project_view', class_name=class_name, project_name=project_name) }}" class="btn btn-secondary back-btn">Back to Project</a>
+</div>
+{% endblock %}
