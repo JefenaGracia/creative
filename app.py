@@ -31,12 +31,12 @@ def home():
     if not is_authenticated():
         return redirect(url_for('login'))
     # If authenticated, redirect to a page based on the role or show a dashboard
-    if session.get('role') == 'teacher':
+    role = session.get('role')
+    if role == 'teacher':
         return redirect(url_for('teachers_home'))
-    elif session.get('role') == 'student':
+    elif role == 'student':
         return redirect(url_for('students_home'))
     return redirect(url_for('login'))
-
 
 @app.route('/google-login', methods=['POST'])
 def google_login():
@@ -49,10 +49,8 @@ def google_login():
         user_email = decoded_token['email']
         print(f"User email being used: '{user_email}'")  # Debugging line
 
-
         user_doc = db.collection('users').document(user_email).get()
         if not user_doc.exists:
-
             return jsonify({'success': False, 'message': 'User not found in the database.'})
 
         role = user_doc.to_dict().get('role')
@@ -69,12 +67,12 @@ def google_login():
 def login():
     if request.method == 'POST':
         email = request.form['email']
-        print(f"Attempting to login with email: {email}")
 
         try:
+            # Fetch user by email
             user = auth.get_user_by_email(email)
-            print(f"Fetched user: {user.email}")
-            
+
+            # Check if user exists in Firestore
             user_doc = db.collection('users').document(email).get()
             if user_doc.exists:
                 session['user'] = email
@@ -84,13 +82,14 @@ def login():
                     return redirect(url_for('teachers_home'))
                 else:
                     flash('Access denied! Only teachers can log in.')
-                    print('Access denied: User is not a teacher.')
             else:
-                flash('User not found.')
+                flash('User not found in the database. Please register first.')
+
         except Exception as e:
             flash(f'Login failed: {e}')
-            print(f"Login error: {e}")
+
     return render_template('login.html')
+
 
 @app.route('/teachers_home')
 def teachers_home():

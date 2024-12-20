@@ -63,12 +63,13 @@ body {
 
     <!-- Flash Messages -->
     {% with messages = get_flashed_messages() %}
-        {% if messages %}
-            <div class="alert alert-danger" role="alert">
-                {{ messages[0] }}
-            </div>
-        {% endif %}
-    {% endwith %}
+    {% if messages %}
+        <div class="alert {% if 'User not found' in messages[0] %}alert-danger{% else %}alert-success{% endif %}" role="alert">
+            {{ messages[0] }}
+        </div>
+    {% endif %}
+{% endwith %}
+
 
     <!-- Google Login Button -->
     <button id="google-login" class="btn btn-google" onclick="googleLogin()">Login with Google</button>
