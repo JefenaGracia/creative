@@ -2,9 +2,19 @@
 
 {% block content %}
 <div class="container add-project-container">
-    <form method="POST" action="{{ url_for('add_project', class_name=class_name) }}" class="add-project-form">
+    <form method="POST" action="{{ url_for('add_project', class_name=class_name) }}" class="add-project-form" enctype="multipart/form-data">
         <label for="project_name" class="form-label">Enter project name:</label>
         <input type="text" id="project_name" name="project_name" class="form-input" required>
+        
+        <label for="description" class="form-label">Enter project description:</label>
+        <textarea id="description" name="description" class="form-input" required></textarea>
+
+        <label for="due_date" class="form-label">Due date:</label>
+        <input type="date" id="due_date" name="due_date" class="form-input" required>
+
+        <label for="team_file" class="form-label">Upload team CSV/Excel file (optional):</label>
+        <input type="file" id="team_file" name="team_file" class="form-input">
+
         <button type="submit" class="btn btn-submit">Add Project</button>
     </form>
 </div>

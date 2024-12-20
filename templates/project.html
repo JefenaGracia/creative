@@ -1,7 +1,12 @@
 {% extends "base.html" %}
+
 {% block content %}
 <div class="container project-container">
     <h1 class="project-title">Project: {{ project_name }}</h1>
+
+    <!-- Display Project Details -->
+    <p><strong>Description:</strong> {{ project_description }}</p>
+    <p><strong>Due Date:</strong> {{ due_date }}</p>
 
     {% if session['role'] == 'teacher' %}
     <a href="{{ url_for('add_team', class_name=class_name, project_name=project_name) }}" class="btn btn-primary add-team-btn">Add Team</a>
