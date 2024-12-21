@@ -16,9 +16,5 @@
         <p>No members in this team yet.</p>
     {% endif %}
 
-    <a href="{{ url_for('project_view', class_name=class_name, project_name=project_name) }}">Back to Project</a>
-    <br>
-    <a href="{{ url_for('classroom_view', class_name=class_name) }}">Back to Classroom</a>
-    <br>
-    <a href="{{ url_for('teachers_home') }}">Back to Home</a>
-{% endblock %}
+    <a href="{{ url_for('project_view', class_name=class_name, project_name=project_name) }}">Back</a>
+   {% endblock %}

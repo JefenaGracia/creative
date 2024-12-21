@@ -19,7 +19,11 @@
             <li class="no-projects-message">No projects available.</li>
         {% endfor %}
     </ul>
-
-    <a href="{{ url_for('teachers_home') }}" class="btn btn-back">Back</a>
+        <!-- Dynamic Back Button -->
+        {% if session['role'] == 'teacher' %}
+        <a href="{{ url_for('teachers_home') }}" class="btn btn-secondary back-btn">Back</a>
+        {% elif session['role'] == 'student' %}
+        <a href="{{ url_for('students_home') }}" class="btn btn-secondary back-btn">Back</a>
+        {% endif %}
 </div>
 {% endblock %}

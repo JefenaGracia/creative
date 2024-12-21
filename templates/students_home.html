@@ -30,12 +30,5 @@
             {% endfor %}
         </ul>
     </div>
-
-    <!-- Show 'Add Team' button only for teachers -->
-    {% if session['role'] == 'teacher' %}
-        <a href="{{ url_for('add_team') }}" class="btn btn-primary add-team-btn">Add Team</a>
-    {% endif %}
-
-    <button class="btn btn-logout" onclick="window.location.href='/logout'">Logout</button>
-</div>
+    </div>
 {% endblock %}

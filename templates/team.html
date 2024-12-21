@@ -18,9 +18,7 @@
     {% endif %}
 
     <div class="back-buttons">
-        <a href="{{ url_for('project_view', class_name=class_name, project_name=project_name) }}" class="btn btn-secondary back-btn">Back to Project</a>
-        <a href="{{ url_for('classroom_view', class_name=class_name) }}" class="btn btn-secondary back-btn">Back to Classroom</a>
-        <a href="{{ url_for('teachers_home') }}" class="btn btn-secondary back-btn">Back to Home</a>
-    </div>
+        <a href="{{ url_for('project_view', class_name=class_name, project_name=project_name) }}" class="btn btn-secondary back-btn">Back</a>
+     </div>
 </div>
 {% endblock %}

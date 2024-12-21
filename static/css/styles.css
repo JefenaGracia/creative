@@ -1,5 +1,7 @@
 /* General Reset */
-* {
+*,
+*::before,
+*::after {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
@@ -7,10 +9,11 @@
 
 /* Body Styling */
 body {
-    font: 1.4rem 'Arial', sans-serif;
+    font: 1.2rem 'Arial', sans-serif;
     background: #f4f4f9;
     color: #333;
-    padding: 0 15px;
+    padding: 0 20px;
+    line-height: 1.6;
 }
 
 /* Content Wrapper */
@@ -19,15 +22,17 @@ body {
     margin: 80px auto;
     padding: 20px;
     background: #fff;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
 /* Headings */
 h1, h2, h3 {
-    color: #000;
+    color: #333;
     margin-bottom: 20px;
     text-align: center;
+    font-weight: 600;
+    font-size: 1.8rem;  /* Reduced font size */
 }
 
 /* Form Elements */
@@ -39,19 +44,21 @@ form, .upload-form, .add-project-form {
 
 label, .form-label {
     font-weight: bold;
-    font-size: 1rem;
+    font-size: 0.9rem;  /* Reduced font size */
     color: #495057;
+    margin-bottom: 5px;
 }
 
-input, .form-input {
+input, .form-input, select {
     padding: 10px;
-    font-size: 1rem;
+    font-size: 0.9rem;  /* Reduced font size */
     border: 1px solid #ced4da;
-    border-radius: 5px;
+    border-radius: 6px;
     width: 100%;
+    transition: border-color 0.3s ease;
 }
 
-input:focus, .form-input:focus {
+input:focus, .form-input:focus, select:focus {
     border-color: #80bdff;
     outline: none;
 }
@@ -59,25 +66,41 @@ input:focus, .form-input:focus {
 /* Buttons */
 button, .btn {
     padding: 8px 16px;
-    background: #000;
+    background: #333;
     color: white;
     border: none;
-    border-radius: 4px;
-    font-size: 1rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
     cursor: pointer;
-    transition: 0.3s;
+    transition: background-color 0.3s ease, transform 0.2s ease, color 0.3s ease;
 }
 
 button:hover, .btn:hover {
-    background: #454343;
+    background-color: #444; 
+    color: white; 
 }
+
+.btn.btn-back:hover {
+    background-color: #555; 
+    color: white;
+}
+
+button:active, .btn:active {
+    background-color: #333; 
+    transform: translateY(0); 
+}
+
 
 /* Links */
 a {
-    color: #000;
+    color: #333;
     text-decoration: none;
-    font-size: 1rem;
-    transition: 0.3s;
+    font-size: 0.9rem;  /* Reduced font size */
+    transition: color 0.3s ease;
+}
+
+a:hover {
+    color: #6d6d6d;
 }
 
 /* Lists */
@@ -90,13 +113,14 @@ ul {
 li {
     padding: 10px;
     border: 1px solid #ddd;
-    background: #f9f9f9;
+    background: #fafafa;
     margin-bottom: 10px;
-    border-radius: 4px;
+    border-radius: 6px;
+    transition: background-color 0.3s ease;
 }
 
 li:hover {
-    background: #f0f8ff;
+    background-color: #f0f8ff;
 }
 
 /* Tables */
@@ -110,25 +134,50 @@ th, td {
     padding: 10px;
     text-align: left;
     border: 1px solid #ddd;
+    font-size: 0.9rem;  /* Reduced font size */
 }
 
 th {
-    background: #000;
+    background-color: #333;
     color: white;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+td {
+    background-color: #fafafa;
 }
 
 /* Footer */
 footer {
     text-align: center;
-    margin-top: 20px;
-    padding: 10px 0;
+    margin-top: 40px;
+    padding: 20px 0;
     color: #666;
-    font-size: 0.9rem;
+    font-size: 0.8rem;  /* Reduced font size */
 }
 
 /* Responsive */
 @media (max-width: 768px) {
-    .container {
-        padding: 10px;
+    body {
+        padding: 0 10px;
+    }
+
+    .content-wrapper {
+        margin: 40px auto;
+        padding: 20px;
+    }
+
+    h1, h2, h3 {
+        font-size: 1.6rem;  /* Reduced font size */
+    }
+
+    form, .upload-form, .add-project-form {
+        gap: 15px;
+    }
+
+    button, .btn {
+        padding: 8px 16px;
+        font-size: 0.9rem;  /* Reduced font size */
     }
 }
