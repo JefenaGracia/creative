@@ -9,9 +9,10 @@
         <label for="description" class="form-label">Enter project description:</label>
         <textarea id="description" name="description" class="form-input" required></textarea>
 
-        <label for="due_date" class="form-label">Due date:</label>
-        <input type="date" id="due_date" name="due_date" class="form-input" required>
-
+        <label for="due_date" class="form-label">Due date and time:</label>
+        <input type="datetime-local" id="due_date" name="due_date" class="form-input" required 
+               min="{{ current_date_time }}" max="9999-12-31T23:59">
+        
         <label for="team_file" class="form-label">Upload team CSV/Excel file (optional):</label>
         <input type="file" id="team_file" name="team_file" class="form-input">
 

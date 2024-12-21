@@ -221,6 +221,10 @@ def classroom_view(class_name):
     projects = {proj.id: proj.to_dict() for proj in projects_ref}
     return render_template('classroom.html', class_name=class_name, projects=projects)
 
+from datetime import datetime
+
+from datetime import datetime
+
 @app.route('/classroom/<class_name>/add_project', methods=['GET', 'POST'])
 def add_project(class_name):
     if not is_authenticated():
@@ -231,6 +235,9 @@ def add_project(class_name):
     if not classroom_ref.exists or classroom_ref.to_dict()['teacherEmail'] != session['user']:
         flash("You do not have permission to add projects.")
         return redirect(url_for('login'))
+
+    # Get the current date and time to pass to the template
+    current_date_time = datetime.now().strftime('%Y-%m-%dT%H:%M')
 
     if request.method == 'POST':
         project_name = request.form['project_name']
@@ -245,9 +252,20 @@ def add_project(class_name):
         due_date = None
         if due_date_str:
             try:
-                due_date = datetime.datetime.strptime(due_date_str, '%Y-%m-%d')
+                # Parse the due date and time
+                due_date = datetime.strptime(due_date_str, '%Y-%m-%dT%H:%M')
+
+                # Validate that the due date is in the future and the year is <= 9999
+                if due_date <= datetime.now():
+                    flash("Due date must be a future date and time.")
+                    return redirect(url_for('add_project', class_name=class_name))
+
+                if due_date.year > 9999:
+                    flash("Year cannot be greater than 9999.")
+                    return redirect(url_for('add_project', class_name=class_name))
+
             except ValueError:
-                flash("Invalid date format. Please use YYYY-MM-DD.")
+                flash("Invalid date and time format. Please use YYYY-MM-DDTHH:MM.")
                 return redirect(url_for('add_project', class_name=class_name))
 
         # Handle file upload for teams
@@ -312,7 +330,9 @@ def add_project(class_name):
             flash(f"Project '{project_name}' added to classroom {class_name}. You can add teams later.")
         return redirect(url_for('classroom_view', class_name=class_name))
 
-    return render_template('add_project.html', class_name=class_name)
+    return render_template('add_project.html', class_name=class_name, current_date_time=current_date_time)
+
+from datetime import datetime
 
 @app.route('/classroom/<class_name>/project/<project_name>')
 def project_view(class_name, project_name):
@@ -326,6 +346,12 @@ def project_view(class_name, project_name):
         return redirect(url_for('classroom_view', class_name=class_name))
 
     project_data = project_ref.to_dict()
+
+    # Format the due date to remove timezone and display in a readable format
+    due_date = project_data.get('dueDate', None)
+    if due_date:
+        # Convert Firestore timestamp (with timezone) to a regular datetime string
+        due_date = due_date.replace(tzinfo=None).strftime('%Y-%m-%d %H:%M:%S')
 
     # Fetch the classroom document
     classroom_ref = db.collection('classrooms').document(class_name).get()
@@ -355,7 +381,7 @@ def project_view(class_name, project_name):
         class_name=class_name,
         project_name=project_name,
         project_description=project_data.get('description', 'No description provided'),
-        due_date=project_data.get('dueDate', 'Not set'),
+        due_date=due_date,
         created_at=project_data.get('createdAt', 'Unknown'),
         teams=teams,
         student_team_assigned=student_team_assigned
