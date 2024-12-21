@@ -17,11 +17,10 @@
                 <a class="navbar-brand" href="{{ url_for('students_home') }}">Creative Assistant</a>
             {% endif %}
             <div class="d-flex">
-                <a class="btn btn-outline-light" href="{{ url_for('logout') }}">Logout</a>
+                <a class="navbar-brand" href="{{ url_for('logout') }}">Logout</a>
             </div>
         </div>
     </nav>
-    
     
     <div class="content-wrapper container mt-5">
         {% block content %}{% endblock %}

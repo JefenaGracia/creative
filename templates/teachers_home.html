@@ -3,7 +3,9 @@
 {% block content %}
 <div class="container teacher-dashboard">
     <h1 class="dashboard-title">Teacher Dashboard</h1>
-
+    <div class="action-buttons">
+        <a href="{{ url_for('upload') }}" class="btn btn-add-classroom">Add Classroom</a>
+    </div>
     <!-- Flash Messages -->
     {% with messages = get_flashed_messages() %}
         {% if messages %}
@@ -25,9 +27,5 @@
             </li>
         {% endfor %}
     </ul>
-
-    <div class="action-buttons">
-        <a href="{{ url_for('upload') }}" class="btn btn-add-classroom">Add Classroom</a>
-    </div>
 </div>
 {% endblock %}
