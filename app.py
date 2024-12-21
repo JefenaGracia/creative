@@ -242,80 +242,74 @@ def add_project(class_name):
             return redirect(url_for('add_project', class_name=class_name))
 
         # Convert the due date to a Firestore timestamp if it's provided
+        due_date = None
         if due_date_str:
-            due_date = datetime.datetime.strptime(due_date_str, '%Y-%m-%d')
-        else:
-            due_date = None
+            try:
+                due_date = datetime.datetime.strptime(due_date_str, '%Y-%m-%d')
+            except ValueError:
+                flash("Invalid date format. Please use YYYY-MM-DD.")
+                return redirect(url_for('add_project', class_name=class_name))
 
-        # Handle file upload
+        # Handle file upload for teams
         team_file = request.files.get('team_file')
+        teams_created = False
+
         if team_file and allowed_file(team_file.filename):
             filename = secure_filename(team_file.filename)
             file_path = os.path.join('uploads', filename)
             team_file.save(file_path)
-            
-            # Parse the CSV/Excel file to extract student information
+
             try:
+                # Parse the file to extract team details
                 if filename.endswith('.csv'):
                     data = pd.read_csv(file_path)
                 else:
                     data = pd.read_excel(file_path)
 
-                # Validate the required columns
+                # Validate required columns
                 required_columns = ['firstname', 'lastname', 'email', 'teamname']
-                missing_columns = [col for col in required_columns if col not in data.columns]
-                if missing_columns:
-                    flash(f"Invalid file format. Missing columns: {', '.join(missing_columns)}.")
+                if any(col not in data.columns for col in required_columns):
+                    flash(f"File must include columns: {', '.join(required_columns)}.")
                     return redirect(url_for('add_project', class_name=class_name))
 
-                # Check for missing or empty values in each row
-                for idx, row in data.iterrows():
-                    for col in required_columns:
-                        # Ensure that the value is a string and not empty
-                        value = row[col]
-                        if pd.isna(value) or (not isinstance(value, str)) or value.strip() == "":
-                            flash(f"Row {idx+1} has an invalid value in column '{col}'. All fields must be non-empty strings.")
-                            return redirect(url_for('add_project', class_name=class_name))
+                class_students = [
+                    student.id for student in db.collection('classrooms')
+                    .document(class_name).collection('students').stream()
+                ]
 
-                # Get list of student emails in the class
-                class_students = [student.id for student in db.collection('classrooms').document(class_name).collection('students').stream()]
-
-                # Check if the students in the file are part of the class
-                invalid_emails = [email for email in data['email'] if email not in class_students]
-                if invalid_emails:
-                    flash(f"The following students are not in this class: {', '.join(invalid_emails)}.")
-                    return redirect(url_for('add_project', class_name=class_name))
-                
-                # Update teams
+                # Verify student emails and prepare team data
                 for _, row in data.iterrows():
-                    team_name = row['teamname']
                     student_email = row['email']
+                    team_name = row['teamname']
                     student_name = f"{row['lastname']}, {row['firstname']}"
 
-                    # Reference to the team's subcollection inside the project
+                    if student_email not in class_students:
+                        flash(f"Student {student_email} is not part of this class.")
+                        return redirect(url_for('add_project', class_name=class_name))
+
                     team_ref = db.collection('classrooms').document(class_name).collection('Projects').document(project_name).collection('teams').document(team_name)
-                    
-                    # Add the student to the team subcollection
                     team_ref.set({
                         student_email: student_name
                     }, merge=True)
 
+                teams_created = True
             except Exception as e:
-                flash(f"Error processing file: {str(e)}")
+                flash(f"Error processing team file: {str(e)}")
                 return redirect(url_for('add_project', class_name=class_name))
 
-        # Reference to the project's Firestore document
+        # Create the project document in Firestore
         project_ref = db.collection('classrooms').document(class_name).collection('Projects').document(project_name)
-
-        # Update project details in Firestore
         project_ref.set({
             'projectName': project_name,
-            'description': project_description,  # Store the description
-            'dueDate': due_date,  # Store the due date (as a timestamp)
-            'createdAt': firestore.SERVER_TIMESTAMP,  # Store the creation timestamp
+            'description': project_description,
+            'dueDate': due_date,
+            'createdAt': firestore.SERVER_TIMESTAMP,
         })
 
-        flash(f"Project '{project_name}' added to classroom {class_name}.")
+        if teams_created:
+            flash(f"Project '{project_name}' with teams added to classroom {class_name}.")
+        else:
+            flash(f"Project '{project_name}' added to classroom {class_name}. You can add teams later.")
         return redirect(url_for('classroom_view', class_name=class_name))
 
     return render_template('add_project.html', class_name=class_name)
@@ -385,6 +379,15 @@ def add_team(class_name, project_name):
             flash('Team name and at least one student are required.')
             return redirect(url_for('add_team', class_name=class_name, project_name=project_name))
 
+        # Check if any student is already assigned to another team for this project
+        teams_ref = db.collection('classrooms').document(class_name).collection('Projects').document(project_name).collection('teams').stream()
+        assigned_students = {student_email for team in teams_ref for student_email in team.to_dict().keys()}
+
+        for student_email in selected_students:
+            if student_email in assigned_students:
+                flash(f"Student {student_email} is already assigned to a team.")
+                return redirect(url_for('add_team', class_name=class_name, project_name=project_name))
+
         # Get student details and ensure they exist in the class
         team_data = {}
         for student_email in selected_students:
@@ -416,6 +419,49 @@ def add_team(class_name, project_name):
     ]
 
     return render_template('add_team.html', class_name=class_name, project_name=project_name, students=available_students)
+
+@app.route('/save-teams', methods=['POST'])
+def save_teams():
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No data received"}), 400
+        
+        teams = data.get("teams", [])
+        class_name = data.get("class_name")
+        project_name = data.get("project_name")
+
+        if not class_name or not project_name:
+            return jsonify({"error": "Class name or project name missing"}), 400
+
+        # Reference to the project's teams collection in Firestore
+        teams_collection_ref = db.collection('classrooms').document(class_name).collection('Projects').document(project_name).collection('teams')
+
+        for team in teams:
+            team_name = team.get("teamName")
+            students = team.get("students", [])
+
+            # Skip saving empty teams
+            if not team_name or not students:
+                continue
+
+            # Prepare team data
+            team_data = {}
+            for student_email in students:
+                student_ref = db.collection('classrooms').document(class_name).collection('students').document(student_email).get()
+                if student_ref.exists:
+                    student_info = student_ref.to_dict()
+                    team_data[student_email] = f"{student_info['lastName']}, {student_info['firstName']}"
+                else:
+                    return jsonify({"error": f"Student {student_email} does not exist in the classroom"}), 400
+            
+            teams_collection_ref.document(team_name).set(team_data)
+
+        return jsonify({"status": "success", "message": "Teams saved successfully!"}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 @app.route('/classroom/<class_name>/project/<project_name>/team/<team_name>')
 def team_view(class_name, project_name, team_name):

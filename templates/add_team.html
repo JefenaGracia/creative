@@ -1,25 +1,180 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container add-team-container">
-    <h1 class="add-team-title">Add Team</h1>
+<div class="content-wrapper">
+    <h1>Manage Teams</h1>
 
-    <form method="POST" class="add-team-form">
-        <label for="team_name" class="form-label">Enter team name:</label>
+    <form id="create-team-form" class="add-project-form" method="POST">
+        <label for="team_name" class="form-label">Enter Team Name</label>
         <input type="text" id="team_name" name="team_name" class="form-input" required>
-        
-        <h3 class="select-students-header">Select Students:</h3>
-        {% for student in students %}
-            <label class="student-label">
-                <input type="checkbox" name="students" value="{{ student['email'] }}" class="student-checkbox">
-                <span class="student-name">{{ student['lastName'] }}, {{ student['firstName'] }}</span>
-            </label>
-            <br>
-        {% endfor %}
-        
-        <button type="submit" class="btn btn-primary submit-team-btn">Submit team</button>
+        <button type="button" id="create-team-btn" class="btn">Create Team</button>
     </form>
 
-    <a href="{{ url_for('project_view', class_name=class_name, project_name=project_name) }}" class="btn btn-secondary back-btn">Back to Project</a>
+    <div id="team-management-area" class="team-management-area">
+        <div class="team-list" id="available-students">
+            <h2>Available Students</h2>
+            <ul class="student-list" id="students-list">
+                {% for student in students %}
+                    <li class="student-item" data-email="{{ student['email'] }}" draggable="true">
+                        {{ student['lastName'] }}, {{ student['firstName'] }}
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div id="teams-container" class="teams-container"></div>
+    </div>
+
+    <button id="save-changes-btn" class="btn">Save Changes</button>
+    <a href="{{ url_for('project_view', class_name=class_name, project_name=project_name) }}" class="btn">Back to Project</a>
 </div>
+
+<script>
+    const studentsList = document.getElementById('students-list');
+    const teamsContainer = document.getElementById('teams-container');
+    const saveChangesBtn = document.getElementById('save-changes-btn');
+
+    function handleDragStart(event) {
+        event.dataTransfer.setData('email', event.target.dataset.email);
+        event.dataTransfer.setData('name', event.target.innerText);
+        event.target.classList.add('dragging');
+    }
+
+    function handleDrop(event, targetList) {
+        event.preventDefault();
+        const email = event.dataTransfer.getData('email');
+        const name = event.dataTransfer.getData('name');
+        const existingStudent = targetList.querySelector(`.student-item[data-email="${email}"]`);
+        
+        // If the student is not already in the target list, add them
+        if (!existingStudent) {
+            const studentItem = document.createElement('li');
+            studentItem.className = 'student-item';
+            studentItem.draggable = true;
+            studentItem.dataset.email = email;
+            studentItem.innerText = name;
+            studentItem.addEventListener('dragstart', handleDragStart);
+            targetList.appendChild(studentItem);
+            
+            // Remove from available students if moved to a team
+            const original = studentsList.querySelector(`.student-item[data-email="${email}"]`);
+            if (original && targetList !== studentsList) {
+                original.remove();
+            }
+        }
+    }
+
+    function createTeam(teamName) {
+        const teamDiv = document.createElement('div');
+        teamDiv.className = 'team-list';
+        teamDiv.id = `team-${teamName}`;
+        teamDiv.innerHTML = `
+            <h2>${teamName}</h2>
+            <ul class="student-list" id="list-${teamName}"></ul>
+        `;
+        teamDiv.addEventListener('dragover', event => event.preventDefault());
+        teamDiv.addEventListener('drop', event => handleDrop(event, teamDiv.querySelector('ul')));
+        teamsContainer.appendChild(teamDiv);
+    }
+
+    function saveChanges() {
+    const teams = [];
+    const teamElements = document.querySelectorAll('.team-list');
+    teamElements.forEach(team => {
+        const teamName = team.querySelector('h2').innerText;
+
+        // Skip the "Available Students" list
+        if (teamName === "Available Students") return;
+
+        const studentsInTeam = [];
+        const studentItems = team.querySelectorAll('.student-item');
+        studentItems.forEach(studentItem => {
+            studentsInTeam.push(studentItem.dataset.email);
+        });
+
+        teams.push({ teamName, students: studentsInTeam });
+    });
+
+    // Send data to the backend
+    fetch('/save-teams', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            teams,
+            class_name: "{{ class_name }}",  // Dynamically inserted by Flask
+            project_name: "{{ project_name }}"  // Dynamically inserted by Flask
+        }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert('Teams saved successfully!');
+        } else {
+            alert(`Error: ${data.error}`);
+        }
+    })
+    .catch(error => {
+        console.error('Error saving teams:', error);
+        alert('Error saving changes.');
+    });
+}
+
+
+
+    document.getElementById('create-team-btn').addEventListener('click', () => {
+        const teamName = document.getElementById('team_name').value.trim();
+        if (teamName && !document.getElementById(`team-${teamName}`)) {
+            createTeam(teamName);
+            document.getElementById('team_name').value = '';
+        }
+    });
+
+    studentsList.addEventListener('dragover', event => event.preventDefault());
+    studentsList.addEventListener('drop', event => handleDrop(event, studentsList));
+
+    Array.from(studentsList.children).forEach(item => item.addEventListener('dragstart', handleDragStart));
+
+    saveChangesBtn.addEventListener('click', saveChanges);
+</script>
+
+<style>
+    .team-management-area {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+    }
+
+    .team-list {
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        padding: 15px;
+        background: #f9f9f9;
+        width: 300px;
+        min-height: 200px;
+    }
+
+    .team-list h2 {
+        margin-bottom: 10px;
+    }
+
+    .student-list {
+        list-style-type: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .student-item {
+        padding: 10px;
+        margin: 5px 0;
+        background: #e6e6e6;
+        border-radius: 5px;
+        cursor: pointer;
+        text-align: center;
+    }
+
+    .student-item.dragging {
+        opacity: 0.5;
+    }
+</style>
 {% endblock %}
