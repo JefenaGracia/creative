@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1>Manage Students for Classroom: {{ class_name }}</h1>
+
+    <a href="{{ url_for('add_student', class_name=class_name) }}" class="btn btn-primary">Add New Student</a>
+
+    <h2>Students List</h2>
+    <ul>
+        {% for student in students %}
+        <li>
+            {{ student.first_name }} {{ student.last_name }} ({{ student.email }})
+            <a href="{{ url_for('edit_student', class_name=class_name, student_id=student.id) }}">Edit</a>
+            <form action="{{ url_for('delete_student', class_name=class_name, student_id=student.id) }}" method="POST" style="display:inline;">
+                <button type="submit" class="btn btn-danger">Delete</button>
+            </form>
+        </li>
+        {% else %}
+        <li>No students in this classroom.</li>
+        {% endfor %}
+    </ul>
+    <!-- Back button -->
+    <a href="{{ url_for('classroom_view', class_name=class_name) }}" class="btn btn-secondary back-btn">Back</a>
+</div>
+{% endblock %}

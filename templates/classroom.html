@@ -6,7 +6,9 @@
 
     <!-- Show Add Project button only if the user is a teacher -->
     {% if session['role'] == 'teacher' %}
-        <a href="{{ url_for('add_project', class_name=class_name) }}" class="btn btn-add-project">Add Project</a>
+    <a href="{{ url_for('add_project', class_name=class_name) }}" class="btn btn-add-project">Add Project</a>
+    <a href="{{ url_for('manage_students', class_name=class_name) }}" class="btn btn-primary">Manage Students</a>
+
     {% endif %}
 
     <h2 class="project-section-title">List of projects</h2>

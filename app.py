@@ -222,6 +222,107 @@ def classroom_view(class_name):
     projects = {proj.id: proj.to_dict() for proj in projects_ref}
     return render_template('classroom.html', class_name=class_name, projects=projects)
 
+@app.route('/classroom/<class_name>/manage_students')
+def manage_students(class_name):
+    # Fetch students from the Firestore subcollection under classrooms
+    classroom_ref = db.collection('classrooms').document(class_name)
+    students_ref = classroom_ref.collection('students')
+    students = students_ref.stream()
+    
+    student_list = []
+    for student in students:
+        student_data = student.to_dict()
+        student_list.append({
+            'id': student.id,
+            'first_name': student_data['firstName'],
+            'last_name': student_data['lastName'],
+            'email': student_data['email']
+        })
+
+    return render_template('manage_students.html', students=student_list, class_name=class_name)
+
+@app.route('/classroom/<class_name>/edit_student/<student_id>', methods=['GET', 'POST'])
+def edit_student(class_name, student_id):
+    # Get the student document from Firestore
+    student_ref = db.collection('classrooms').document(class_name).collection('students').document(student_id)
+    student_doc = student_ref.get()
+
+    if not student_doc.exists:
+        flash('Student not found.')
+        return redirect(url_for('manage_students', class_name=class_name))
+
+    student = student_doc.to_dict()
+
+    # Check if the keys are correct
+    print(student)  # Debugging line to check if the student data is loaded correctly
+
+    if request.method == 'POST':
+        # Get the updated values from the form
+        first_name = request.form['first_name']
+        last_name = request.form['last_name']
+        email = request.form['email']
+
+        # Update the student's information in the classroom's students subcollection
+        student_ref.update({
+            'firstName': first_name,
+            'lastName': last_name,
+            'email': email
+        })
+
+        # Also update the student's information in the 'users' collection
+        user_doc = db.collection('users').document(student_id)
+        user_doc.update({
+            'name': f"{last_name}, {first_name}",
+            'email': email
+        })
+
+        flash('Student information updated successfully.')
+        return redirect(url_for('manage_students', class_name=class_name))
+
+    return render_template('edit_student.html', student=student, class_name=class_name)
+
+@app.route('/classroom/<class_name>/delete_student/<student_id>', methods=['POST'])
+def delete_student(class_name, student_id):
+    classroom_ref = db.collection('classrooms').document(class_name)
+    student_ref = classroom_ref.collection('students').document(student_id)
+    
+    # Delete the student from Firestore
+    student_ref.delete()
+
+    return redirect(url_for('manage_students', class_name=class_name))
+
+@app.route('/classroom/<class_name>/add_student', methods=['GET', 'POST'])
+def add_student(class_name):
+    if request.method == 'POST':
+        first_name = request.form['first_name']
+        last_name = request.form['last_name']
+        email = request.form['email']
+
+        classroom_ref = db.collection('classrooms').document(class_name)
+
+        # Add student to the Firestore classroom students subcollection
+        classroom_ref.collection('students').document(email).set({
+            'firstName': first_name,
+            'lastName': last_name,
+            'email': email,
+            'assignedAt': firestore.SERVER_TIMESTAMP
+        })
+
+        # Check if the student already exists in the users collection
+        user_doc = db.collection('users').document(email)
+        if not user_doc.get().exists:
+            # If not, add the student to the 'users' collection
+            user_doc.set({
+                'email': email,
+                'role': 'student',
+                'name': f"{last_name}, {first_name}",
+                'createdAt': firestore.SERVER_TIMESTAMP
+            })
+
+        return redirect(url_for('manage_students', class_name=class_name))
+
+    return render_template('add_student.html', class_name=class_name)
+
 @app.route('/classroom/<class_name>/add_project', methods=['GET', 'POST'])
 def add_project(class_name):
     if not is_authenticated():
