@@ -80,18 +80,29 @@ function enableDragAndDrop(container) {
         event.dataTransfer.setData('name', event.target.textContent.trim());
         event.target.classList.add('dragging');
     }
-    function handleDragEnd(event) {
+function handleDragEnd(event) {
     event.target.classList.remove('dragging');
 
     // Check if the list becomes empty after drag
     const targetList = event.target.closest('.student-list');
     if (targetList && targetList.querySelectorAll('.student-item').length === 0) {
-        // Add "No students assigned" only if not already present
-        if (!targetList.querySelector('.no-students')) {
-            const noStudentsMessage = document.createElement('li');
-            noStudentsMessage.className = 'no-students';
-            noStudentsMessage.textContent = 'No students assigned';
-            targetList.appendChild(noStudentsMessage);
+        // Add "No students assigned" or "All students assigned" only if not already present
+        if (targetList.id === "students-list") {
+            // For Unassigned Students list, show "All students assigned"
+            if (!targetList.querySelector('.no-students')) {
+                const noStudentsMessage = document.createElement('li');
+                noStudentsMessage.className = 'no-students';
+                noStudentsMessage.textContent = 'All students assigned';
+                targetList.appendChild(noStudentsMessage);
+            }
+        } else {
+            // For other lists, show "No students assigned"
+            if (!targetList.querySelector('.no-students')) {
+                const noStudentsMessage = document.createElement('li');
+                noStudentsMessage.className = 'no-students';
+                noStudentsMessage.textContent = 'No students assigned';
+                targetList.appendChild(noStudentsMessage);
+            }
         }
     }
 }
@@ -118,8 +129,6 @@ function createTeam(teamName) {
     enableDragAndDrop(teamDiv);
 }
 
-
-
 function handleDrop(event, targetList) {
     event.preventDefault();
     const email = event.dataTransfer.getData('email');
@@ -141,7 +150,7 @@ function handleDrop(event, targetList) {
 
         targetList.appendChild(studentItem);
 
-        // Remove "No students assigned" message if it exists
+        // Remove "No students assigned" or "All students assigned" message if it exists
         const noStudentsMessage = targetList.querySelector('.no-students');
         if (noStudentsMessage) {
             noStudentsMessage.remove();
@@ -155,8 +164,13 @@ function handleDrop(event, targetList) {
 
                 // Check if the list becomes empty
                 if (list.querySelectorAll('.student-item').length === 0) {
-                    // Add "No students assigned" only if not already present
-                    if (!list.querySelector('.no-students')) {
+                    // Add appropriate message based on whether it's the Unassigned Students list or another list
+                    if (list.id === "students-list" && !list.querySelector('.no-students')) {
+                        const emptyMessage = document.createElement('li');
+                        emptyMessage.className = 'no-students';
+                        emptyMessage.textContent = 'All students assigned';
+                        list.appendChild(emptyMessage);
+                    } else if (!list.querySelector('.no-students')) {
                         const emptyMessage = document.createElement('li');
                         emptyMessage.className = 'no-students';
                         emptyMessage.textContent = 'No students assigned';
@@ -167,7 +181,6 @@ function handleDrop(event, targetList) {
         });
     }
 }
-
 
 function saveChanges() {
     const teams = [];
@@ -219,12 +232,19 @@ function saveChanges() {
 </script>
 
 <style>
-    .team-management-area {
+.team-management-area {
     display: flex;
     gap: 20px; 
     flex-wrap: wrap; 
     justify-content: flex-start; 
     padding: 10px;
+}
+
+.teams-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px; /* Adjust the gap between team lists */
+    justify-content: flex-start; /* Align teams to the start */
 }
 
 .team-list {
@@ -233,7 +253,7 @@ function saveChanges() {
     padding: 15px;
     background: #f9f9f9;
     width: 250px;
-    min-height: 150px; 
+    min-height: 50px; 
     transition: background-color 0.3s ease;
     display: flex;
     flex-direction: column; 
@@ -248,8 +268,7 @@ function saveChanges() {
     list-style-type: none;
     padding: 0;
     margin: 0;
-    max-height: 300px; 
-    overflow-y: auto; 
+    /* Removed max-height and overflow-y to remove scrolling */
 }
 
 .student-item {

@@ -1,0 +1,11 @@
+name: creative
+channels:
+  - anaconda
+  - defaults
+dependencies:
+  - flask
+  - pandas
+  - openpyxl
+  - pip
+  - pip:
+    - firebase-admin

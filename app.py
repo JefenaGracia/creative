@@ -3,6 +3,7 @@ import os
 import pandas as pd
 import datetime
 import firebase_admin
+from datetime import datetime
 from firebase_admin import credentials, firestore, auth
 from google.cloud import firestore
 from werkzeug.utils import secure_filename
@@ -221,10 +222,6 @@ def classroom_view(class_name):
     projects = {proj.id: proj.to_dict() for proj in projects_ref}
     return render_template('classroom.html', class_name=class_name, projects=projects)
 
-from datetime import datetime
-
-from datetime import datetime
-
 @app.route('/classroom/<class_name>/add_project', methods=['GET', 'POST'])
 def add_project(class_name):
     if not is_authenticated():
@@ -331,8 +328,6 @@ def add_project(class_name):
         return redirect(url_for('classroom_view', class_name=class_name))
 
     return render_template('add_project.html', class_name=class_name, current_date_time=current_date_time)
-
-from datetime import datetime
 
 @app.route('/classroom/<class_name>/project/<project_name>')
 def project_view(class_name, project_name):

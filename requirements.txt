@@ -1,0 +1,4 @@
+flask==2.3.2
+pandas==1.5.3
+firebase-admin==6.0.2
+openpyxl==3.0.10
