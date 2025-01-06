@@ -392,6 +392,7 @@ def add_team(class_name, project_name):
     if not is_authenticated():
         return redirect(url_for('login'))
 
+    # Check teacher permission
     classroom_ref = db.collection('classrooms').document(class_name).get()
     if not classroom_ref.exists or classroom_ref.to_dict()['teacherEmail'] != session['user']:
         flash("You do not have permission to add teams.")
@@ -405,16 +406,16 @@ def add_team(class_name, project_name):
             flash('Team name and at least one student are required.')
             return redirect(url_for('add_team', class_name=class_name, project_name=project_name))
 
-        # Check if any student is already assigned to another team for this project
+        # Prevent duplicates in the same project
         teams_ref = db.collection('classrooms').document(class_name).collection('Projects').document(project_name).collection('teams').stream()
         assigned_students = {student_email for team in teams_ref for student_email in team.to_dict().keys()}
 
         for student_email in selected_students:
-            if student_email in assigned_students:
+            if student_email in assigned_students and student_email not in request.form.getlist(f'team_{team_name}_existing'):
                 flash(f"Student {student_email} is already assigned to a team.")
                 return redirect(url_for('add_team', class_name=class_name, project_name=project_name))
 
-        # Get student details and ensure they exist in the class
+        # Update or create the team
         team_data = {}
         for student_email in selected_students:
             student_ref = db.collection('classrooms').document(class_name).collection('students').document(student_email).get()
@@ -425,26 +426,43 @@ def add_team(class_name, project_name):
                 flash(f"Student {student_email} not found.")
                 return redirect(url_for('add_team', class_name=class_name, project_name=project_name))
 
-        # Create the team in Firestore
         team_ref = db.collection('classrooms').document(class_name).collection('Projects').document(project_name).collection('teams').document(team_name)
         team_ref.set(team_data)
 
-        flash(f'Team "{team_name}" created successfully!')
-        return redirect(url_for('project_view', class_name=class_name, project_name=project_name))
+        flash(f'Team "{team_name}" updated successfully!')
+        return redirect(url_for('add_team', class_name=class_name, project_name=project_name))
 
-    # Fetch all students who are not assigned to a team for this project
+    # Fetch students and teams
     all_students = db.collection('classrooms').document(class_name).collection('students').stream()
-    assigned_students = set()
     teams_ref = db.collection('classrooms').document(class_name).collection('Projects').document(project_name).collection('teams').stream()
+    
+    available_students = []
+    assigned_students = {}
+    for s in all_students:
+        student = s.to_dict()
+        student_email = s.id
+        assigned_students[student_email] = False
+        available_students.append({'email': student_email, 'firstName': student['firstName'], 'lastName': student['lastName']})
+
+    teams = []
     for team in teams_ref:
-        assigned_students.update(team.to_dict().keys())
+        team_name = team.id
+        team_data = team.to_dict()
+        students_in_team = [{'email': email, 'name': team_data[email]} for email in team_data]
+        teams.append({'teamName': team_name, 'students': students_in_team})
+        for student in students_in_team:
+            assigned_students[student['email']] = True
 
-    available_students = [
-        {'email': s.id, 'firstName': s.to_dict()['firstName'], 'lastName': s.to_dict()['lastName']} 
-        for s in all_students if s.id not in assigned_students
-    ]
+    # Filter available students
+    available_students = [s for s in available_students if not assigned_students[s['email']]]
 
-    return render_template('add_team.html', class_name=class_name, project_name=project_name, students=available_students)
+    return render_template(
+        'add_team.html',
+        class_name=class_name,
+        project_name=project_name,
+        students=available_students,
+        teams=teams
+    )
 
 @app.route('/save-teams', methods=['POST'])
 def save_teams():
@@ -463,9 +481,16 @@ def save_teams():
         # Reference to the project's teams collection in Firestore
         teams_collection_ref = db.collection('classrooms').document(class_name).collection('Projects').document(project_name).collection('teams')
 
+        # Fetch existing teams from Firestore
+        existing_teams = teams_collection_ref.stream()
+        existing_team_data = {team.id: team.to_dict() for team in existing_teams}
+
+        # Track all processed students to avoid duplication
+        processed_students = set()
+
         for team in teams:
             team_name = team.get("teamName")
-            students = team.get("students", [])
+            students = [s for s in team.get("students", []) if s != "No students"]
 
             # Skip saving empty teams
             if not team_name or not students:
@@ -474,13 +499,32 @@ def save_teams():
             # Prepare team data
             team_data = {}
             for student_email in students:
+                # Ensure the student is not already processed
+                if student_email in processed_students:
+                    continue
+
+                processed_students.add(student_email)
+
+                # Fetch student details
                 student_ref = db.collection('classrooms').document(class_name).collection('students').document(student_email).get()
                 if student_ref.exists:
                     student_info = student_ref.to_dict()
                     team_data[student_email] = f"{student_info['lastName']}, {student_info['firstName']}"
+
+                    # Remove the student from their old team
+                    for old_team_name, old_team_data in existing_team_data.items():
+                        if student_email in old_team_data:
+                            del existing_team_data[old_team_name][student_email]
+
+                            # If the old team becomes empty, delete it
+                            if not existing_team_data[old_team_name]:
+                                teams_collection_ref.document(old_team_name).delete()
+                            else:
+                                teams_collection_ref.document(old_team_name).set(existing_team_data[old_team_name])
                 else:
                     return jsonify({"error": f"Student {student_email} does not exist in the classroom"}), 400
             
+            # Save the new team data
             teams_collection_ref.document(team_name).set(team_data)
 
         return jsonify({"status": "success", "message": "Teams saved successfully!"}), 200

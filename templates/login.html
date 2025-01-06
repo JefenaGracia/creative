@@ -63,12 +63,12 @@ body {
 
     <!-- Flash Messages -->
     {% with messages = get_flashed_messages() %}
-    {% if messages %}
-        <div class="alert {% if 'User not found' in messages[0] %}alert-danger{% else %}alert-success{% endif %}" role="alert">
-            {{ messages[0] }}
-        </div>
-    {% endif %}
-{% endwith %}
+        {% if messages %}
+            <div class="alert {% if 'User not found' in messages[0] %}alert-danger{% else %}alert-info{% endif %}" role="alert">
+                <strong>{{ messages[0] }}</strong>
+            </div>
+        {% endif %}
+    {% endwith %}
 
 
     <!-- Google Login Button -->
@@ -101,46 +101,70 @@ body {
 
     // Google login function
     function googleLogin() {
-        signInWithPopup(auth, provider)
-            .then((result) => {
-                const user = result.user;
-                const token = user.getIdToken();  // Get Firebase ID token
+    signInWithPopup(auth, provider)
+        .then((result) => {
+            const user = result.user;
+            const token = user.getIdToken(); // Get Firebase ID token
 
-                token.then(idToken => {
-                    console.log("Google login ID token: ", idToken);
-                    fetch('/google-login', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ token: idToken })
-                    })
-                    .then(res => res.json())
-                    .then(data => {
-                        console.log('Backend response:', data);
-                        if (data.success) {
-                            if (data.role === 'teacher') {
-                                window.location.href = '/teachers_home';  // Redirect to teacher's home page
-                            } else if (data.role === 'student') {
-                                window.location.href = '/students_home';  // Redirect to student's home page
-                            } else {
-                                console.log('Invalid role:', data.role);
-                            }
+            token.then(idToken => {
+                console.log("Google login ID token: ", idToken);
+                fetch('/google-login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ token: idToken })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    console.log('Backend response:', data);
+                    if (data.success) {
+                        if (data.role === 'teacher') {
+                            window.location.href = '/teachers_home'; // Redirect to teacher's home page
+                        } else if (data.role === 'student') {
+                            window.location.href = '/students_home'; // Redirect to student's home page
                         } else {
-                            console.log('Login failed: ', data);
+                            console.log('Invalid role:', data.role);
                         }
-                    })
-                    .catch(error => {
-                        console.error('Error during login:', error);
-                    });
-                }).catch(err => {
-                    console.error('Error fetching ID token:', err);
+                    } else {
+                        // Display the error message on the page
+                        displayErrorMessage(data.message || 'An error occurred during login.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error during login:', error);
+                    displayErrorMessage('A network error occurred.');
                 });
-            })
-            .catch((error) => {
-                console.log('Google login failed:', error);
+            }).catch(err => {
+                console.error('Error fetching ID token:', err);
+                displayErrorMessage('Failed to retrieve login token.');
             });
+        })
+        .catch((error) => {
+            console.log('Google login failed:', error);
+            displayErrorMessage('Google login failed. Please try again.');
+        });
+}
+
+// Function to dynamically display error messages
+function displayErrorMessage(message) {
+    const loginContainer = document.querySelector('.login-container');
+    const titleElement = loginContainer.querySelector('h2');
+    const existingAlert = loginContainer.querySelector('.alert');
+    
+    if (existingAlert) {
+        existingAlert.textContent = message; // Update the message if alert already exists
+        existingAlert.classList.remove('alert-info', 'alert-danger'); // Reset classes
+        existingAlert.classList.add('alert-danger'); // Add error class
+    } else {
+        // Create a new alert if it doesn't exist
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-danger';
+        alertDiv.role = 'alert';
+        alertDiv.textContent = message;
+        titleElement.insertAdjacentElement('afterend', alertDiv); // Insert below the title
     }
+}
 
     // Ensure the script is loaded and googleLogin function is defined before use
     window.onload = () => {

@@ -3,107 +3,191 @@
 {% block content %}
 <div class="content-wrapper">
     <h1>Manage Teams</h1>
-
+    <!-- Form to create a new team -->
     <form id="create-team-form" class="add-project-form" method="POST">
         <label for="team_name" class="form-label">Enter Team Name</label>
         <input type="text" id="team_name" name="team_name" class="form-input" required>
         <button type="button" id="create-team-btn" class="btn">Create Team</button>
     </form>
-
+    <!-- Area for managing teams and available students -->
     <div id="team-management-area" class="team-management-area">
-        <div class="team-list" id="available-students">
-            <h2>Available Students</h2>
+        <!-- Available students list -->
+        <div class="team-list" id="available-students" aria-label="Available Students" role="region">
+            <h4>Unassigned Students</h4>
             <ul class="student-list" id="students-list">
                 {% for student in students %}
-                    <li class="student-item" data-email="{{ student['email'] }}" draggable="true">
+                    <li class="student-item" data-email="{{ student['email'] }}" draggable="true" role="listitem">
                         {{ student['lastName'] }}, {{ student['firstName'] }}
                     </li>
                 {% endfor %}
             </ul>
         </div>
-        <div id="teams-container" class="teams-container"></div>
+        
+        <!-- Existing teams will be dynamically loaded -->
+        <div id="teams-container" class="teams-container">
+            {% for team in teams %}
+                <div class="team-list" id="team-{{ team.teamName }}" aria-label="{{ team.teamName }}" role="region">
+                    <h4>{{ team.teamName }}</h4>
+                    <ul class="student-list">
+                        {% for student in team.students %}
+                            <li class="student-item" data-email="{{ student.email }}" draggable="true" role="listitem">
+                                {{ student.name }}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endfor %}
+        </div>
     </div>
-
+    <!-- Save changes and back buttons -->
     <button id="save-changes-btn" class="btn">Save Changes</button>
     <a href="{{ url_for('project_view', class_name=class_name, project_name=project_name) }}" class="btn">Back</a>
 </div>
-
 <script>
-    const studentsList = document.getElementById('students-list');
-    const teamsContainer = document.getElementById('teams-container');
-    const saveChangesBtn = document.getElementById('save-changes-btn');
-
+function enableDragAndDrop(container) {
+    const studentItems = container.querySelectorAll('.student-item');
+    const studentLists = container.querySelectorAll('.student-list');
+    // Handle dragstart and dragend for student items
+    studentItems.forEach(item => {
+        item.addEventListener('dragstart', handleDragStart);
+        item.addEventListener('dragend', handleDragEnd);
+    });
+    // Handle dragover and drop for all student lists
+    studentLists.forEach(list => {
+        list.addEventListener('dragover', event => {
+            event.preventDefault(); // Allow drop
+            list.classList.add('drag-over'); // Apply custom visual effect (optional)
+        });
+        list.addEventListener('dragleave', event => {
+            list.classList.remove('drag-over'); // Remove visual effect when dragging leaves
+        });
+        list.addEventListener('drop', event => {
+            event.preventDefault(); // Prevent default drop action
+            handleDrop(event, list); // Handle drop logic
+            list.classList.remove('drag-over'); // Remove visual effect after drop
+            // If the list becomes empty, re-add the "No students assigned" message
+            if (list.querySelectorAll('.student-item').length === 0) {
+                const noStudentsMessage = document.createElement('li');
+                noStudentsMessage.className = 'no-students';
+                noStudentsMessage.textContent = 'No students assigned';
+                list.appendChild(noStudentsMessage);
+            }
+        });
+    });
+}
     function handleDragStart(event) {
         event.dataTransfer.setData('email', event.target.dataset.email);
-        event.dataTransfer.setData('name', event.target.innerText);
+        event.dataTransfer.setData('name', event.target.textContent.trim());
         event.target.classList.add('dragging');
     }
+    function handleDragEnd(event) {
+    event.target.classList.remove('dragging');
 
-    function handleDrop(event, targetList) {
-        event.preventDefault();
-        const email = event.dataTransfer.getData('email');
-        const name = event.dataTransfer.getData('name');
-        const existingStudent = targetList.querySelector(`.student-item[data-email="${email}"]`);
-        
-        // If the student is not already in the target list, add them
-        if (!existingStudent) {
-            const studentItem = document.createElement('li');
-            studentItem.className = 'student-item';
-            studentItem.draggable = true;
-            studentItem.dataset.email = email;
-            studentItem.innerText = name;
-            studentItem.addEventListener('dragstart', handleDragStart);
-            targetList.appendChild(studentItem);
-            
-            // Remove from available students if moved to a team
-            const original = studentsList.querySelector(`.student-item[data-email="${email}"]`);
-            if (original && targetList !== studentsList) {
-                original.remove();
-            }
+    // Check if the list becomes empty after drag
+    const targetList = event.target.closest('.student-list');
+    if (targetList && targetList.querySelectorAll('.student-item').length === 0) {
+        // Add "No students assigned" only if not already present
+        if (!targetList.querySelector('.no-students')) {
+            const noStudentsMessage = document.createElement('li');
+            noStudentsMessage.className = 'no-students';
+            noStudentsMessage.textContent = 'No students assigned';
+            targetList.appendChild(noStudentsMessage);
         }
     }
+}
 
-    function createTeam(teamName) {
-        const teamDiv = document.createElement('div');
-        teamDiv.className = 'team-list';
-        teamDiv.id = `team-${teamName}`;
-        teamDiv.innerHTML = `
-            <h2>${teamName}</h2>
-            <ul class="student-list" id="list-${teamName}"></ul>
-        `;
-        teamDiv.addEventListener('dragover', event => event.preventDefault());
-        teamDiv.addEventListener('drop', event => handleDrop(event, teamDiv.querySelector('ul')));
-        teamsContainer.appendChild(teamDiv);
+function createTeam(teamName) {
+    const teamDiv = document.createElement('div');
+    teamDiv.className = 'team-list';
+    teamDiv.id = `team-${teamName}`;
+    teamDiv.setAttribute('role', 'region');
+    teamDiv.setAttribute('aria-label', teamName);
+
+    // Include "No students assigned" only if not already present
+    teamDiv.innerHTML = `
+        <h2>${teamName}</h2>
+        <ul class="student-list">
+            <li class="no-students">No students assigned</li>
+        </ul>
+    `;
+
+    teamsContainer.appendChild(teamDiv);
+
+    // Enable drag-and-drop functionality for the new team
+    const newTeamList = teamDiv.querySelector('.student-list');
+    enableDragAndDrop(teamDiv);
+}
+
+
+
+function handleDrop(event, targetList) {
+    event.preventDefault();
+    const email = event.dataTransfer.getData('email');
+    const name = event.dataTransfer.getData('name');
+    if (!email || !name) return;
+
+    // Avoid duplicate entries in the target list
+    const existingStudent = targetList.querySelector(`.student-item[data-email="${email}"]`);
+    if (!existingStudent) {
+        const studentItem = document.createElement('li');
+        studentItem.className = 'student-item';
+        studentItem.draggable = true;
+        studentItem.dataset.email = email;
+        studentItem.textContent = name;
+
+        // Add drag-and-drop event listeners to the new student item
+        studentItem.addEventListener('dragstart', handleDragStart);
+        studentItem.addEventListener('dragend', handleDragEnd);
+
+        targetList.appendChild(studentItem);
+
+        // Remove "No students assigned" message if it exists
+        const noStudentsMessage = targetList.querySelector('.no-students');
+        if (noStudentsMessage) {
+            noStudentsMessage.remove();
+        }
+
+        // Remove student from other lists
+        document.querySelectorAll('.student-list').forEach(list => {
+            if (list !== targetList) {
+                const student = list.querySelector(`.student-item[data-email="${email}"]`);
+                if (student) student.remove();
+
+                // Check if the list becomes empty
+                if (list.querySelectorAll('.student-item').length === 0) {
+                    // Add "No students assigned" only if not already present
+                    if (!list.querySelector('.no-students')) {
+                        const emptyMessage = document.createElement('li');
+                        emptyMessage.className = 'no-students';
+                        emptyMessage.textContent = 'No students assigned';
+                        list.appendChild(emptyMessage);
+                    }
+                }
+            }
+        });
     }
+}
 
-    function saveChanges() {
+
+function saveChanges() {
     const teams = [];
     const teamElements = document.querySelectorAll('.team-list');
     teamElements.forEach(team => {
-        const teamName = team.querySelector('h2').innerText;
+        const teamName = team.querySelector('h2').textContent.trim();
+        const studentsInTeam = Array.from(team.querySelectorAll('.student-item')).map(item => item.dataset.email);
 
-        // Skip the "Available Students" list
-        if (teamName === "Available Students") return;
-
-        const studentsInTeam = [];
-        const studentItems = team.querySelectorAll('.student-item');
-        studentItems.forEach(studentItem => {
-            studentsInTeam.push(studentItem.dataset.email);
-        });
-
-        teams.push({ teamName, students: studentsInTeam });
+        if (teamName !== "Available Students") {
+            teams.push({ teamName, students: studentsInTeam.length ? studentsInTeam : ["No students"] });
+        }
     });
 
-    // Send data to the backend
     fetch('/save-teams', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             teams,
-            class_name: "{{ class_name }}",  // Dynamically inserted by Flask
-            project_name: "{{ project_name }}"  // Dynamically inserted by Flask
+            class_name: "{{ class_name }}",
+            project_name: "{{ project_name }}"
         }),
     })
     .then(response => response.json())
@@ -116,12 +200,13 @@
     })
     .catch(error => {
         console.error('Error saving teams:', error);
-        alert('Error saving changes.');
+        alert('An error occurred while saving changes.');
     });
 }
 
-
-
+    const teamsContainer = document.getElementById('teams-container');
+    const studentsList = document.getElementById('students-list');
+    const saveChangesBtn = document.getElementById('save-changes-btn');
     document.getElementById('create-team-btn').addEventListener('click', () => {
         const teamName = document.getElementById('team_name').value.trim();
         if (teamName && !document.getElementById(`team-${teamName}`)) {
@@ -129,52 +214,89 @@
             document.getElementById('team_name').value = '';
         }
     });
-
-    studentsList.addEventListener('dragover', event => event.preventDefault());
-    studentsList.addEventListener('drop', event => handleDrop(event, studentsList));
-
-    Array.from(studentsList.children).forEach(item => item.addEventListener('dragstart', handleDragStart));
-
+    enableDragAndDrop(document);
     saveChangesBtn.addEventListener('click', saveChanges);
 </script>
 
 <style>
     .team-management-area {
-        display: flex;
-        gap: 20px;
-        flex-wrap: wrap;
-    }
+    display: flex;
+    gap: 20px; 
+    flex-wrap: wrap; 
+    justify-content: flex-start; 
+    padding: 10px;
+}
 
-    .team-list {
-        border: 2px solid #ddd;
-        border-radius: 8px;
-        padding: 15px;
-        background: #f9f9f9;
-        width: 300px;
-        min-height: 200px;
-    }
+.team-list {
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    background: #f9f9f9;
+    width: 250px;
+    min-height: 150px; 
+    transition: background-color 0.3s ease;
+    display: flex;
+    flex-direction: column; 
+    align-items: flex-start; 
+}
 
-    .team-list h2 {
-        margin-bottom: 10px;
-    }
+.team-list h2 {
+    margin-bottom: 10px;
+}
 
-    .student-list {
-        list-style-type: none;
-        padding: 0;
-        margin: 0;
-    }
+.student-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    max-height: 300px; 
+    overflow-y: auto; 
+}
 
-    .student-item {
-        padding: 10px;
-        margin: 5px 0;
-        background: #e6e6e6;
-        border-radius: 5px;
-        cursor: pointer;
-        text-align: center;
-    }
+.student-item {
+    padding: 10px;
+    margin: 5px;
+    background: #e6e6e6;
+    border-radius: 5px;
+    cursor: pointer;
+    text-align: center;
+    transition: background-color 0.3s ease;
+}
 
-    .student-item.dragging {
-        opacity: 0.5;
-    }
+.student-item:hover {
+    background-color: #d1d1d1;
+}
+
+.student-item.dragging {
+    opacity: 0.5;
+}
+
+h4 {
+    color: #333;
+    margin-bottom: 20px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 0.8rem;
+}
+
+.team-list:hover {
+    background-color: #f1f1f1;
+}
+
+.student-list.drag-over {
+    border: 2px solid green;
+    background-color: rgba(0, 255, 0, 0.2); 
+}
+
+.no-students {
+    padding: 10px;
+    margin: 5px 0;
+    background-color: #f0f0f0;
+    border-radius: 5px;
+    text-align: center;
+    color: #888;
+    font-style: italic;
+}
+
 </style>
+
 {% endblock %}

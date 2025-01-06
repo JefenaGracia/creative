@@ -9,7 +9,7 @@
     <p><strong>Due Date:</strong> {{ due_date }}</p>
 
     {% if session['role'] == 'teacher' %}
-    <a href="{{ url_for('add_team', class_name=class_name, project_name=project_name) }}" class="btn btn-primary add-team-btn">Add Team</a>
+    <a href="{{ url_for('add_team', class_name=class_name, project_name=project_name) }}" class="btn btn-primary add-team-btn">Manage Teams</a>
     <h2 class="teams-header">List of teams</h2>
     {% if teams %}
         <ul class="list-group teams-list">
