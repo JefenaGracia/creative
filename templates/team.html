@@ -1,24 +1,26 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container team-view-container">
-    <h1 class="team-title">Team: {{ team_name }}</h1>
-    <h2 class="project-title">Project: {{ project_name }}</h2>
-    <h3 class="classroom-title">Classroom: {{ class_name }}</h3>
+<div class="container team-view-container mt-2 pt-2">
+    <h1 class="team-title mb-3"><i class="bi bi-people-fill"></i> Team: {{ team_name }}</h1>
 
-    <h2 class="team-members-title">Team Members</h2>
+    <h2 class="team-members-title mb-3"> Members</h2>
     {% if team_members %}
-        <ul class="team-members-list">
+        <ul class="list-group team-members-list">
             {% for member in team_members %}
-                <li class="team-member">{{ member }}</li>
+                <li class="list-group-item team-member">
+                    <i class="bi bi-person-fill"></i> {{ member }}
+                </li>
             {% endfor %}
         </ul>
     {% else %}
         <p class="no-members">No members in this team yet.</p>
     {% endif %}
 
-    <div class="back-buttons">
-        <a href="{{ url_for('project_view', class_name=class_name, project_name=project_name) }}" class="btn btn-secondary back-btn">Back</a>
+    <div class="back-buttons mt-4">
+        <a href="{{ url_for('project_view', class_name=class_name, project_name=project_name) }}" class="btn btn-dark back-btn">
+            <i class="bi bi-arrow-left"></i> Back to project
+        </a>
     </div>
 </div>
 {% endblock %}

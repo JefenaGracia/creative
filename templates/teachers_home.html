@@ -1,29 +1,22 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container teacher-dashboard">
-    <h1 class="dashboard-title">Teacher Dashboard</h1>
-    <div class="action-buttons">
-        <a href="{{ url_for('upload') }}" class="btn btn-add-classroom">Add Classroom</a>
-    </div>
-    <!-- Flash Messages -->
-    {% with messages = get_flashed_messages() %}
-        {% if messages %}
-            <div class="alert alert-info flash-messages">
-                <ul class="message-list">
-                    {% for message in messages %}
-                        <li class="message-item">{{ message }}</li>
-                    {% endfor %}
-                </ul>
-            </div>
-        {% endif %}
-    {% endwith %}
+<div class="container teacher-dashboard mt-2 pt-2">
+    <h1 class="dashboard-title mb-4"><i class="bi bi-person-workspace"></i> Teacher's Dashboard</h1>
 
-    <h3 class="section-title">List of classrooms</h3>
-    <ul class="classroom-list">
+    <div class="action-buttons mb-4">
+        <a href="{{ url_for('upload') }}" class="btn btn-dark btn-lg">
+            <i class="bi bi-plus-circle"></i> Add Classroom
+        </a>
+    </div>
+
+    <h3 class="section-title mb-3"> Your Classrooms</h3>
+    <ul class="list-group classroom-list">
         {% for class_name in classrooms.keys() %}
-            <li class="classroom-item">
-                <a href="{{ url_for('classroom_view', class_name=class_name) }}" class="classroom-link">{{ class_name }}</a>
+            <li class="list-group-item classroom-item mb-3">
+                <a href="{{ url_for('classroom_view', class_name=class_name) }}" class="classroom-link">
+                    <i class="bi bi-chevron-right"></i> {{ class_name }}
+                </a>
             </li>
         {% endfor %}
     </ul>

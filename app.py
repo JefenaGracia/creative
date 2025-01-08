@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
+from flask import Flask,flash, get_flashed_messages, render_template, request, redirect, url_for, flash, session, jsonify
 import os
 import pandas as pd
 import datetime
@@ -10,7 +10,7 @@ from werkzeug.utils import secure_filename
 
 # Initialize Flask App
 app = Flask(__name__)
-app.secret_key = 'your_secret_key'
+app.secret_key = 'secret_key'
 
 # Initialize Firebase
 cred = credentials.Certificate("firebase-key.json")
@@ -46,7 +46,6 @@ def home():
     elif role == 'student':
         return redirect(url_for('students_home'))
     return redirect(url_for('login'))
-
 @app.route('/google-login', methods=['POST'])
 def google_login():
     try:
@@ -60,15 +59,23 @@ def google_login():
 
         user_doc = db.collection('users').document(user_email).get()
         if not user_doc.exists:
+            flash('User not found in the database.', 'danger')  # Flashing error message
             return jsonify({'success': False, 'message': 'User not found in the database.'})
 
         role = user_doc.to_dict().get('role')
         session['user'] = user_email
         session['role'] = role
 
+        # Ensure the flash message is only shown once.
+        if role == 'teacher':
+            flash(f'Welcome back, {user_email}!', 'success')  # Flashing success message for teacher
+        else:
+            flash('Welcome back, student!', 'success')  # Flashing success message for student
+
         return jsonify({'success': True, 'role': role})
 
     except Exception as e:
+        flash(f'An error occurred during login: {e}', 'danger')  # Flashing error message
         return jsonify({'success': False, 'error': str(e)})
 
 
@@ -87,15 +94,15 @@ def login():
                 session['user'] = email
                 session['role'] = user_doc.to_dict().get('role')  # Storing role in session
                 if session['role'] == 'teacher':
-                    flash(f'Welcome, {email}!')
+                    flash(f'Welcome, {email}!', 'success')  # Flashing success message for teacher
                     return redirect(url_for('teachers_home'))
                 else:
-                    flash('Access denied! Only teachers can log in.')
+                    flash('Access denied! Only teachers can log in.', 'danger')  # Flashing error message
             else:
-                flash('User not found in the database. Please register first.')
+                flash('User not found in the database. Please register first.', 'warning')  # Flashing warning message
 
         except Exception as e:
-            flash(f'Login failed: {e}')
+            flash(f'Login failed: {e}', 'danger')
 
     return render_template('login.html')
 
@@ -288,6 +295,9 @@ def delete_student(class_name, student_id):
     
     # Delete the student from Firestore
     student_ref.delete()
+    
+    # Flash success message
+    flash('Student has been successfully removed.', 'success')
 
     return redirect(url_for('manage_students', class_name=class_name))
 
@@ -318,7 +328,7 @@ def add_student(class_name):
                 'name': f"{last_name}, {first_name}",
                 'createdAt': firestore.SERVER_TIMESTAMP
             })
-
+        flash(f'{first_name} {last_name} has been added to the classroom.', 'success')
         return redirect(url_for('manage_students', class_name=class_name))
 
     return render_template('add_student.html', class_name=class_name)
@@ -326,15 +336,14 @@ def add_student(class_name):
 @app.route('/classroom/<class_name>/add_project', methods=['GET', 'POST'])
 def add_project(class_name):
     if not is_authenticated():
+        flash("Please log in to continue.", "danger")
         return redirect(url_for('login'))
 
-    # Get the classroom reference
     classroom_ref = db.collection('classrooms').document(class_name).get()
     if not classroom_ref.exists or classroom_ref.to_dict()['teacherEmail'] != session['user']:
-        flash("You do not have permission to add projects.")
+        flash("You do not have permission to add projects.", "danger")
         return redirect(url_for('login'))
 
-    # Get the current date and time to pass to the template
     current_date_time = datetime.now().strftime('%Y-%m-%dT%H:%M')
 
     if request.method == 'POST':
@@ -343,30 +352,23 @@ def add_project(class_name):
         due_date_str = request.form['due_date']
 
         if not project_name:
-            flash("Project name is required.")
+            flash("Project name is required.", "warning")
             return redirect(url_for('add_project', class_name=class_name))
 
-        # Convert the due date to a Firestore timestamp if it's provided
         due_date = None
         if due_date_str:
             try:
-                # Parse the due date and time
                 due_date = datetime.strptime(due_date_str, '%Y-%m-%dT%H:%M')
-
-                # Validate that the due date is in the future and the year is <= 9999
                 if due_date <= datetime.now():
-                    flash("Due date must be a future date and time.")
+                    flash("Due date must be in the future.", "warning")
                     return redirect(url_for('add_project', class_name=class_name))
-
                 if due_date.year > 9999:
-                    flash("Year cannot be greater than 9999.")
+                    flash("Year cannot exceed 9999.", "warning")
                     return redirect(url_for('add_project', class_name=class_name))
-
             except ValueError:
-                flash("Invalid date and time format. Please use YYYY-MM-DDTHH:MM.")
+                flash("Invalid date and time format. Use YYYY-MM-DDTHH:MM.", "danger")
                 return redirect(url_for('add_project', class_name=class_name))
 
-        # Handle file upload for teams
         team_file = request.files.get('team_file')
         teams_created = False
 
@@ -376,44 +378,30 @@ def add_project(class_name):
             team_file.save(file_path)
 
             try:
-                # Parse the file to extract team details
-                if filename.endswith('.csv'):
-                    data = pd.read_csv(file_path)
-                else:
-                    data = pd.read_excel(file_path)
-
-                # Validate required columns
+                data = pd.read_csv(file_path) if filename.endswith('.csv') else pd.read_excel(file_path)
                 required_columns = ['firstname', 'lastname', 'email', 'teamname']
                 if any(col not in data.columns for col in required_columns):
-                    flash(f"File must include columns: {', '.join(required_columns)}.")
+                    flash(f"File must include columns: {', '.join(required_columns)}.", "danger")
                     return redirect(url_for('add_project', class_name=class_name))
 
-                class_students = [
-                    student.id for student in db.collection('classrooms')
-                    .document(class_name).collection('students').stream()
-                ]
-
-                # Verify student emails and prepare team data
+                class_students = [student.id for student in db.collection('classrooms').document(class_name).collection('students').stream()]
                 for _, row in data.iterrows():
                     student_email = row['email']
                     team_name = row['teamname']
                     student_name = f"{row['lastname']}, {row['firstname']}"
 
                     if student_email not in class_students:
-                        flash(f"Student {student_email} is not part of this class.")
+                        flash(f"Student {student_email} is not part of this class.", "danger")
                         return redirect(url_for('add_project', class_name=class_name))
 
                     team_ref = db.collection('classrooms').document(class_name).collection('Projects').document(project_name).collection('teams').document(team_name)
-                    team_ref.set({
-                        student_email: student_name
-                    }, merge=True)
+                    team_ref.set({student_email: student_name}, merge=True)
 
                 teams_created = True
             except Exception as e:
-                flash(f"Error processing team file: {str(e)}")
+                flash(f"Error processing team file: {str(e)}", "danger")
                 return redirect(url_for('add_project', class_name=class_name))
 
-        # Create the project document in Firestore
         project_ref = db.collection('classrooms').document(class_name).collection('Projects').document(project_name)
         project_ref.set({
             'projectName': project_name,
@@ -423,9 +411,9 @@ def add_project(class_name):
         })
 
         if teams_created:
-            flash(f"Project '{project_name}' with teams added to classroom {class_name}.")
+            flash(f"Project '{project_name}' with teams added to classroom {class_name}.", "success")
         else:
-            flash(f"Project '{project_name}' added to classroom {class_name}. You can add teams later.")
+            flash(f"Project '{project_name}' added to classroom {class_name}. You can add teams later.", "success")
         return redirect(url_for('classroom_view', class_name=class_name))
 
     return render_template('add_project.html', class_name=class_name, current_date_time=current_date_time)
@@ -607,7 +595,7 @@ def save_teams():
                     student_info = student_ref.to_dict()
                     team_data[student_email] = f"{student_info['lastName']}, {student_info['firstName']}"
 
-                    # Remove the student from their old team
+                    # Remove the student from their old team if needed
                     for old_team_name, old_team_data in existing_team_data.items():
                         if student_email in old_team_data:
                             del existing_team_data[old_team_name][student_email]
@@ -627,7 +615,6 @@ def save_teams():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 
 @app.route('/classroom/<class_name>/project/<project_name>/team/<team_name>')
 def team_view(class_name, project_name, team_name):

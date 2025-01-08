@@ -1,27 +1,35 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container add-project-container">
-    <form method="POST" action="{{ url_for('add_project', class_name=class_name) }}" class="add-project-form" enctype="multipart/form-data">
-        <label for="project_name" class="form-label">Enter project name:</label>
-        <input type="text" id="project_name" name="project_name" class="form-input" required>
-        
-        <label for="description" class="form-label">Enter project description:</label>
-        <textarea id="description" name="description" class="form-input" required></textarea>
+<div class="container mt-2">
+    <h1 class="mb-4"> Add New Project</h1>
 
-        <label for="due_date" class="form-label">Due date and time:</label>
-        <input type="datetime-local" id="due_date" name="due_date" class="form-input" required 
-               min="{{ current_date_time }}" max="9999-12-31T23:59">
-        
-        <label for="team_file" class="form-label">Upload team CSV/Excel file (optional):</label>
-        <input type="file" id="team_file" name="team_file" class="form-input">
+    <form method="POST" action="{{ url_for('add_project', class_name=class_name) }}" enctype="multipart/form-data">
+        <div class="mb-3">
+            <label for="project_name" class="form-label"><i class="bi bi-card-text"></i> Project Name</label>
+            <input type="text" id="project_name" name="project_name" class="form-control" required>
+        </div>
 
-        <button type="submit" class="btn btn-submit">Add Project</button>
+        <div class="mb-3">
+            <label for="description" class="form-label"><i class="bi bi-pencil-square"></i> Project Description</label>
+            <textarea id="description" name="description" class="form-control" rows="4" required></textarea>
+        </div>
+
+        <div class="mb-3">
+            <label for="due_date" class="form-label"><i class="bi bi-calendar-event"></i> Due Date</label>
+            <input type="datetime-local" id="due_date" name="due_date" class="form-control" required 
+                   min="{{ current_date_time }}" max="9999-12-31T23:59">
+        </div>
+
+        <div class="mb-3">
+            <label for="team_file" class="form-label"><i class="bi bi-file-earmark-spreadsheet"></i> Team CSV/Excel File (Optional)</label>
+            <input type="file" id="team_file" name="team_file" class="form-control" accept=".csv, .xls, .xlsx">
+        </div>
+
+        <div class="d-flex justify-content-start gap-2">
+            <button type="submit" class="btn btn-dark"><i class="bi bi-upload"></i> Upload</button>
+            <a href="{{ url_for('classroom_view', class_name=class_name) }}" class="btn btn-dark"><i class="bi bi-arrow-left"></i> Back to Classroom </a>
+        </div>
     </form>
-    
-    <div class="back-buttons">
-        <a href="{{ url_for('add_team', class_name=class_name, project_name=project_name) }}" class="btn btn-secondary back-btn">Back</a>
-    </div>
-    
 </div>
 {% endblock %}

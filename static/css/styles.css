@@ -59,7 +59,7 @@ input, .form-input, select {
 }
 
 input:focus, .form-input:focus, select:focus {
-    border-color: #80bdff;
+    border-color: #b9c1c9;
     outline: none;
 }
 

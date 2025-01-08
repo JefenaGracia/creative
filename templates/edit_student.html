@@ -1,25 +1,26 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container">
-    <h1>Edit Student: {{ student.firstName }} {{ student.lastName }}</h1>
+<div class="container mt-2">
+    <h1><i class="bi bi-pencil-fill"></i> Edit Student: {{ student.firstName }} {{ student.lastName }}</h1>
 
     <form method="POST">
-        <div class="form-group">
-            <label for="first_name">First Name:</label>
+        <div class="mb-3">
+            <label for="first_name" class="form-label"><i class="bi bi-person"></i> First Name:</label>
             <input type="text" name="first_name" id="first_name" class="form-control" value="{{ student.firstName }}" required>
         </div>
-        <div class="form-group">
-            <label for="last_name">Last Name:</label>
+        <div class="mb-3">
+            <label for="last_name" class="form-label"><i class="bi bi-person"></i> Last Name:</label>
             <input type="text" name="last_name" id="last_name" class="form-control" value="{{ student.lastName }}" required>
         </div>
-        <div class="form-group">
-            <label for="email">Email:</label>
+        <div class="mb-3">
+            <label for="email" class="form-label"><i class="bi bi-envelope"></i> Email:</label>
             <input type="email" name="email" id="email" class="form-control" value="{{ student.email }}" required>
         </div>
-        <button type="submit" class="btn btn-success">Save Changes</button>
+        <div class="d-flex justify-content-start gap-2">
+            <button type="submit" class="btn btn-dark"><i class="bi bi-check-circle"></i> Save Changes</button>
+            <a href="{{ url_for('manage_students', class_name=class_name) }}" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Back to Manage Students</a>
+        </div>
     </form>
-     <!-- Back button -->
-     <a href="{{ url_for('manage_students', class_name=class_name) }}" class="btn btn-secondary">Back to Manage Students</a>
 </div>
 {% endblock %}

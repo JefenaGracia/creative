@@ -2,17 +2,25 @@
 
 {% block content %}
 <div class="content-wrapper">
-    <h1>Manage Teams</h1>
-    <!-- Form to create a new team -->
+    <h1><i class="bi bi-people-fill"></i> Manage Teams</h1>
+
     <form id="create-team-form" class="add-project-form" method="POST">
         <label for="team_name" class="form-label">Enter Team Name</label>
         <input type="text" id="team_name" name="team_name" class="form-input" required>
-        <button type="button" id="create-team-btn" class="btn">Create Team</button>
     </form>
+    
+    <div id="create-team-container" class="mt-3">
+        <button type="button" id="create-team-btn" class="btn btn-secondary">
+            <i class="bi bi-plus-circle"></i> Create Team
+        </button>    
+    </div>
+    <div class="mt-4"></div>
+    
     <!-- Area for managing teams and available students -->
     <div id="team-management-area" class="team-management-area">
-        <!-- Available students list -->
-        <div class="team-list" id="available-students" aria-label="Available Students" role="region">
+    
+        <!-- Fixed Unassigned Students section -->
+        <div id="unassigned-students-section" class="unassigned-students-section">
             <h4>Unassigned Students</h4>
             <ul class="student-list" id="students-list">
                 {% for student in students %}
@@ -22,8 +30,8 @@
                 {% endfor %}
             </ul>
         </div>
-        
-        <!-- Existing teams will be dynamically loaded -->
+
+        <!-- Container for existing teams -->
         <div id="teams-container" class="teams-container">
             {% for team in teams %}
                 <div class="team-list" id="team-{{ team.teamName }}" aria-label="{{ team.teamName }}" role="region">
@@ -39,10 +47,19 @@
             {% endfor %}
         </div>
     </div>
-    <!-- Save changes and back buttons -->
-    <button id="save-changes-btn" class="btn">Save Changes</button>
-    <a href="{{ url_for('project_view', class_name=class_name, project_name=project_name) }}" class="btn">Back</a>
+
+<!-- Space between the teams and buttons -->
+<div class="mt-4"></div>
+<button id="save-changes-btn" class="btn btn-secondary mt-3">
+    <i class="bi bi-save"></i> Save Changes
+</button>
+    
+<a href="{{ url_for('project_view', class_name=class_name, project_name=project_name) }}" class="btn btn-secondary mt-3">
+    <i class="bi bi-arrow-left me-2"></i> Back to Project
+</a>
+
 </div>
+
 <script>
 function enableDragAndDrop(container) {
     const studentItems = container.querySelectorAll('.student-item');
@@ -232,90 +249,104 @@ function saveChanges() {
 </script>
 
 <style>
-.team-management-area {
-    display: flex;
-    gap: 20px; 
-    flex-wrap: wrap; 
-    justify-content: flex-start; 
-    padding: 10px;
-}
+    .team-management-area {
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+    }
 
-.teams-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px; /* Adjust the gap between team lists */
-    justify-content: flex-start; /* Align teams to the start */
-}
+    /* Fixed Unassigned Students section */
+    .unassigned-students-section {
+        flex: 1; /* Take up available space */
+        max-width: 300px; /* You can adjust this width */
+        border: 2px solid #ddd;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border-radius: 8px;
+        min-height: 200px; /* Ensure some height */
+    }
 
-.team-list {
-    border: 2px solid #ddd;
-    border-radius: 8px;
-    padding: 15px;
-    background: #f9f9f9;
-    width: 250px;
-    min-height: 50px; 
-    transition: background-color 0.3s ease;
-    display: flex;
-    flex-direction: column; 
-    align-items: flex-start; 
-}
+    .unassigned-students-section h4 {
+        margin-bottom: 20px;
+        text-align: center;
+        font-size: 1.1rem;
+        color: #333;
+    }
 
-.team-list h2 {
-    margin-bottom: 10px;
-}
+    .unassigned-students-section .student-list {
+        list-style-type: none;
+        padding: 0;
+        margin: 0;
+    }
 
-.student-list {
-    list-style-type: none;
-    padding: 0;
-    margin: 0;
-    /* Removed max-height and overflow-y to remove scrolling */
-}
+    .unassigned-students-section .student-item {
+        padding: 10px;
+        margin: 5px;
+        background: #e6e6e6;
+        border-radius: 5px;
+        cursor: pointer;
+        text-align: center;
+        transition: background-color 0.3s ease;
+    }
 
-.student-item {
-    padding: 10px;
-    margin: 5px;
-    background: #e6e6e6;
-    border-radius: 5px;
-    cursor: pointer;
-    text-align: center;
-    transition: background-color 0.3s ease;
-}
+    .unassigned-students-section .student-item:hover {
+        background-color: #d1d1d1;
+    }
 
-.student-item:hover {
-    background-color: #d1d1d1;
-}
+    .teams-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        justify-content: flex-start;
+        flex: 2;
+    }
 
-.student-item.dragging {
-    opacity: 0.5;
-}
+    .team-list {
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        padding: 15px;
+        background: #f9f9f9;
+        width: 250px;
+        min-height: 50px;
+        transition: background-color 0.3s ease;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+    }
 
-h4 {
-    color: #333;
-    margin-bottom: 20px;
-    text-align: center;
-    font-weight: 600;
-    font-size: 0.8rem;
-}
+    .team-list h2 {
+        margin-bottom: 10px;
+    }
 
-.team-list:hover {
-    background-color: #f1f1f1;
-}
+    .student-list {
+        list-style-type: none;
+        padding: 0;
+        margin: 0;
+    }
 
-.student-list.drag-over {
-    border: 2px solid green;
-    background-color: rgba(0, 255, 0, 0.2); 
-}
+    .student-item {
+        padding: 10px;
+        margin: 5px;
+        background: #e6e6e6;
+        border-radius: 5px;
+        cursor: pointer;
+        text-align: center;
+        transition: background-color 0.3s ease;
+    }
 
-.no-students {
-    padding: 10px;
-    margin: 5px 0;
-    background-color: #f0f0f0;
-    border-radius: 5px;
-    text-align: center;
-    color: #888;
-    font-style: italic;
-}
+    .student-item:hover {
+        background-color: #d1d1d1;
+    }
 
+    .no-students {
+        padding: 10px;
+        margin: 5px 0;
+        background-color: #f0f0f0;
+        border-radius: 5px;
+        text-align: center;
+        color: #888;
+        font-style: italic;
+    }
 </style>
 
 {% endblock %}
