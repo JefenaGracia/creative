@@ -1,4 +1,4 @@
-from flask import Flask,flash, get_flashed_messages, render_template, request, redirect, url_for, flash, session, jsonify
+from flask import Flask, flash, get_flashed_messages, render_template, request, redirect, url_for, flash, session, jsonify
 import os
 import pandas as pd
 import datetime
@@ -7,6 +7,7 @@ from datetime import datetime
 from firebase_admin import credentials, firestore, auth
 from google.cloud import firestore
 from werkzeug.utils import secure_filename
+import re
 
 # Initialize Flask App
 app = Flask(__name__)
@@ -46,6 +47,7 @@ def home():
     elif role == 'student':
         return redirect(url_for('students_home'))
     return redirect(url_for('login'))
+
 @app.route('/google-login', methods=['POST'])
 def google_login():
     try:
@@ -55,27 +57,21 @@ def google_login():
         # Verify the Firebase ID token
         decoded_token = auth.verify_id_token(token)
         user_email = decoded_token['email']
-        print(f"User email being used: '{user_email}'")  # Debugging line
+        print(f"User email being used: '{user_email}'") 
 
         user_doc = db.collection('users').document(user_email).get()
         if not user_doc.exists:
-            flash('User not found in the database.', 'danger')  # Flashing error message
+            flash('User not found in the database.', 'danger')  
             return jsonify({'success': False, 'message': 'User not found in the database.'})
 
         role = user_doc.to_dict().get('role')
         session['user'] = user_email
         session['role'] = role
-
-        # Ensure the flash message is only shown once.
-        if role == 'teacher':
-            flash(f'Welcome back, {user_email}!', 'success')  # Flashing success message for teacher
-        else:
-            flash('Welcome back, student!', 'success')  # Flashing success message for student
-
+        flash(f'Welcome to Creative Assistant', 'success') 
         return jsonify({'success': True, 'role': role})
 
     except Exception as e:
-        flash(f'An error occurred during login: {e}', 'danger')  # Flashing error message
+        flash(f'An error occurred during login: {e}', 'danger')  
         return jsonify({'success': False, 'error': str(e)})
 
 
@@ -92,14 +88,11 @@ def login():
             user_doc = db.collection('users').document(email).get()
             if user_doc.exists:
                 session['user'] = email
-                session['role'] = user_doc.to_dict().get('role')  # Storing role in session
+                session['role'] = user_doc.to_dict().get('role') 
                 if session['role'] == 'teacher':
-                    flash(f'Welcome, {email}!', 'success')  # Flashing success message for teacher
                     return redirect(url_for('teachers_home'))
-                else:
-                    flash('Access denied! Only teachers can log in.', 'danger')  # Flashing error message
             else:
-                flash('User not found in the database. Please register first.', 'warning')  # Flashing warning message
+                flash('User not found in the database.', 'warning')  # Flashing warning message
 
         except Exception as e:
             flash(f'Login failed: {e}', 'danger')
@@ -148,62 +141,81 @@ def upload():
         return redirect(url_for('login'))
 
     if request.method == 'POST':
-        class_name = request.form['class_name']
-        file = request.files['student_file']
+        class_name = request.form.get('class_name', '').strip()
+        file = request.files.get('student_file')
 
-        if not class_name or not file:
-            flash('Class name and file are required.')
+        # Improved Validation
+        if not class_name:
+            flash('Class name is required.', 'error')
+            return redirect(url_for('upload'))
+
+        if not file or file.filename == '':
+            flash('File is required.', 'error')
             return redirect(url_for('upload'))
 
         file_ext = os.path.splitext(file.filename)[1].lower()
         if file_ext not in ['.csv', '.xlsx']:
-            flash('Only CSV or Excel files are allowed.')
+            flash('Only CSV or Excel files are allowed.', 'error')
             return redirect(url_for('upload'))
 
+        # Save file temporarily
         file_path = os.path.join(UPLOAD_FOLDER, file.filename)
-        file.save(file_path)
-
         try:
+            if not os.path.exists(UPLOAD_FOLDER):
+                os.makedirs(UPLOAD_FOLDER)
+
+            file.save(file_path)
+
+            # Load data into a DataFrame
             if file_ext == '.csv':
                 df = pd.read_csv(file_path)
             else:
                 df = pd.read_excel(file_path)
 
-            if not {'firstname', 'lastname', 'email'}.issubset(df.columns):
-                flash('File must have columns: firstname, lastname, email.')
+            # Validate required columns
+            required_columns = {'firstname', 'lastname', 'email'}
+            if not required_columns.issubset(df.columns):
+                flash(f'File must contain columns: {", ".join(required_columns)}.', 'danger')
                 return redirect(url_for('upload'))
 
+            # Ensure email column contains valid email addresses
+            if not all(df['email'].apply(lambda x: isinstance(x, str) and '@' in x)):
+                flash('All entries in the email column must have a valid email addresses.', 'danger')
+                return redirect(url_for('upload'))
+
+            # Add classroom and students to Firestore
             classroom_ref = db.collection('classrooms').document(class_name)
             classroom_ref.set({'classID': class_name, 'teacherEmail': session['user']})
 
             for _, row in df.iterrows():
-                student_email = row['email']
+                student_email = row['email'].strip()
                 student_data = {
-                    'firstName': row['firstname'],
-                    'lastName': row['lastname'],
+                    'firstName': row['firstname'].strip(),
+                    'lastName': row['lastname'].strip(),
                     'email': student_email,
                     'assignedAt': firestore.SERVER_TIMESTAMP
                 }
                 classroom_ref.collection('students').document(student_email).set(student_data)
-                
+
                 user_doc = db.collection('users').document(student_email)
                 if not user_doc.get().exists:
                     user_doc.set({
                         'email': student_email,
                         'role': 'student',
-                        'name': f"{row['lastname']}, {row['firstname']}",
+                        'name': f"{row['lastname'].strip()}, {row['firstname'].strip()}",
                         'createdAt': firestore.SERVER_TIMESTAMP
                     })
 
-            flash(f'Classroom "{class_name}" created successfully!')
+            flash(f'Classroom "{class_name}" created successfully!', 'success')
             return redirect(url_for('teachers_home'))
 
         except Exception as e:
-            flash(f'Error processing file: {e}')
+            flash(f'Error processing file: {str(e)}', 'danger')
             return redirect(url_for('upload'))
 
         finally:
-            os.remove(file_path)
+            if os.path.exists(file_path):
+                os.remove(file_path)
 
     return render_template('upload.html')
 
@@ -283,23 +295,64 @@ def edit_student(class_name, student_id):
             'email': email
         })
 
-        flash('Student information updated successfully.')
+        flash('Student information updated successfully.','success')
         return redirect(url_for('manage_students', class_name=class_name))
 
     return render_template('edit_student.html', student=student, class_name=class_name)
 
+def sanitize_email(email):
+    """Sanitize email by replacing non-alphanumeric characters."""
+    return email.replace('@', '_at_').replace('.', '_dot_')
+
 @app.route('/classroom/<class_name>/delete_student/<student_id>', methods=['POST'])
 def delete_student(class_name, student_id):
-    classroom_ref = db.collection('classrooms').document(class_name)
-    student_ref = classroom_ref.collection('students').document(student_id)
-    
-    # Delete the student from Firestore
-    student_ref.delete()
-    
-    # Flash success message
-    flash('Student has been successfully removed.', 'success')
+    try:
+        classroom_ref = db.collection('classrooms').document(class_name)
+        student_ref = classroom_ref.collection('students').document(student_id)
 
-    return redirect(url_for('manage_students', class_name=class_name))
+        # Check if the student exists before trying to delete
+        if not student_ref.get().exists:
+            print(f"Student {student_id} not found.")
+            flash('Student not found in the classroom', 'danger')
+            return redirect(url_for('manage_students', class_name=class_name))
+        
+        # Delete the student from Firestore
+        student_ref.delete()
+
+        # Remove the student from all teams in the Projects collection
+        projects_ref = classroom_ref.collection('Projects')
+        projects = projects_ref.stream()
+
+        for project in projects:
+            project_ref = projects_ref.document(project.id)
+            teams_ref = project_ref.collection('teams')
+
+            # Iterate through all teams and remove the student from any team they are part of
+            for team in teams_ref.stream():
+                team_ref = teams_ref.document(team.id)
+                team_data = team_ref.get().to_dict()
+
+                # Sanitize the student_id email before using it as a field name
+                sanitized_student_id = sanitize_email(student_id)
+
+                # Check if the sanitized student_id is part of the team
+                if sanitized_student_id in team_data:
+                    # Remove the student from the team
+                    team_ref.update({
+                        sanitized_student_id: firestore.DELETE_FIELD
+                    })
+
+                    # If no students are left in the team, delete the team
+                    if not team_ref.get().to_dict():
+                        team_ref.delete()
+
+        # Flash success message
+        flash('Student has been successfully removed from the classroom', 'success')
+        return redirect(url_for('manage_students', class_name=class_name))
+    
+    except Exception as e:
+        flash(f'Error deleting student: {str(e)}', 'danger')
+        return redirect(url_for('manage_students', class_name=class_name))
 
 @app.route('/classroom/<class_name>/add_student', methods=['GET', 'POST'])
 def add_student(class_name):
@@ -391,7 +444,7 @@ def add_project(class_name):
                     student_name = f"{row['lastname']}, {row['firstname']}"
 
                     if student_email not in class_students:
-                        flash(f"Student {student_email} is not part of this class.", "danger")
+                        flash(f"Student {student_name} is not part of this class.", "danger")
                         return redirect(url_for('add_project', class_name=class_name))
 
                     team_ref = db.collection('classrooms').document(class_name).collection('Projects').document(project_name).collection('teams').document(team_name)
@@ -539,7 +592,7 @@ def add_team(class_name, project_name):
 
     # Filter available students
     available_students = [s for s in available_students if not assigned_students[s['email']]]
-
+    
     return render_template(
         'add_team.html',
         class_name=class_name,
@@ -547,74 +600,83 @@ def add_team(class_name, project_name):
         students=available_students,
         teams=teams
     )
-
 @app.route('/save-teams', methods=['POST'])
 def save_teams():
     try:
         data = request.get_json()
         if not data:
-            return jsonify({"error": "No data received"}), 400
+            flash("No data received.", "danger")
+            return redirect(request.referrer)
         
         teams = data.get("teams", [])
         class_name = data.get("class_name")
         project_name = data.get("project_name")
 
+        if not isinstance(teams, list):
+            flash("Invalid format for teams. Expected a list.", "danger")
+            return redirect(request.referrer)
+        
         if not class_name or not project_name:
-            return jsonify({"error": "Class name or project name missing"}), 400
+            flash("Class name or project name missing.", "danger")
+            return redirect(request.referrer)
 
-        # Reference to the project's teams collection in Firestore
+        # Reference to the Firestore collection for teams
         teams_collection_ref = db.collection('classrooms').document(class_name).collection('Projects').document(project_name).collection('teams')
 
         # Fetch existing teams from Firestore
         existing_teams = teams_collection_ref.stream()
         existing_team_data = {team.id: team.to_dict() for team in existing_teams}
 
-        # Track all processed students to avoid duplication
         processed_students = set()
 
         for team in teams:
             team_name = team.get("teamName")
-            students = [s for s in team.get("students", []) if s != "No students"]
+            students = team.get("students", [])
 
-            # Skip saving empty teams
-            if not team_name or not students:
-                continue
+            if not team_name:
+                flash("Team name is missing for one of the teams.", "danger")
+                return redirect(request.referrer)
+            
+            if students is None:
+                students = []
 
-            # Prepare team data
             team_data = {}
             for student_email in students:
-                # Ensure the student is not already processed
                 if student_email in processed_students:
                     continue
 
                 processed_students.add(student_email)
 
-                # Fetch student details
+                # Fetch student details from Firestore
                 student_ref = db.collection('classrooms').document(class_name).collection('students').document(student_email).get()
                 if student_ref.exists:
                     student_info = student_ref.to_dict()
+                    # Save student details in the team data
                     team_data[student_email] = f"{student_info['lastName']}, {student_info['firstName']}"
 
-                    # Remove the student from their old team if needed
+                    # Remove the student from their old team if they are being moved
                     for old_team_name, old_team_data in existing_team_data.items():
                         if student_email in old_team_data:
                             del existing_team_data[old_team_name][student_email]
 
-                            # If the old team becomes empty, delete it
-                            if not existing_team_data[old_team_name]:
-                                teams_collection_ref.document(old_team_name).delete()
-                            else:
+                            # Only update the team if it still has members
+                            if existing_team_data[old_team_name]:
                                 teams_collection_ref.document(old_team_name).set(existing_team_data[old_team_name])
+                            else:
+                                # Skip deletion of empty teams
+                                flash(f"Team '{old_team_name}' is now empty, but will not be deleted.", "warning")
                 else:
-                    return jsonify({"error": f"Student {student_email} does not exist in the classroom"}), 400
-            
+                    return jsonify({"error": f"Student {student_email} does not exist in the classroom."}), 400
+
             # Save the new team data
             teams_collection_ref.document(team_name).set(team_data)
 
-        return jsonify({"status": "success", "message": "Teams saved successfully!"}), 200
+        flash("Teams saved successfully!", "success")
+        return redirect(request.referrer)
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        flash(f"An error occurred: {str(e)}", "danger")
+        return redirect(request.referrer)
 
 @app.route('/classroom/<class_name>/project/<project_name>/team/<team_name>')
 def team_view(class_name, project_name, team_name):

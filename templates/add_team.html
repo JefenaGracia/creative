@@ -10,19 +10,21 @@
     </form>
     
     <div id="create-team-container" class="mt-3">
-        <button type="button" id="create-team-btn" class="btn btn-secondary">
-            <i class="bi bi-plus-circle"></i> Create Team
+        <button type="submit" id="create-team-btn" class="btn btn-secondary">
+            <span class="spinner-border spinner-border-sm" id="spinner" aria-hidden="true" style="display: none;"></span>
+            <span id="button-text"><i class="bi bi-plus-circle"></i> Create Team</span>
         </button>    
     </div>
+    
     <div class="mt-4"></div>
     
-    <!-- Area for managing teams and available students -->
     <div id="team-management-area" class="team-management-area">
-    
-        <!-- Fixed Unassigned Students section -->
         <div id="unassigned-students-section" class="unassigned-students-section">
             <h4>Unassigned Students</h4>
             <ul class="student-list" id="students-list">
+                {% if not students %}
+                    <li class="no-students">All students assigned</li>
+                {% endif %}            
                 {% for student in students %}
                     <li class="student-item" data-email="{{ student['email'] }}" draggable="true" role="listitem">
                         {{ student['lastName'] }}, {{ student['firstName'] }}
@@ -31,122 +33,91 @@
             </ul>
         </div>
 
-        <!-- Container for existing teams -->
         <div id="teams-container" class="teams-container">
             {% for team in teams %}
                 <div class="team-list" id="team-{{ team.teamName }}" aria-label="{{ team.teamName }}" role="region">
                     <h4>{{ team.teamName }}</h4>
                     <ul class="student-list">
-                        {% for student in team.students %}
-                            <li class="student-item" data-email="{{ student.email }}" draggable="true" role="listitem">
-                                {{ student.name }}
-                            </li>
-                        {% endfor %}
+                        {% if not team.students %}
+                            <li class="no-students">No students assigned</li>   
+                        {% else %}
+                            {% for student in team.students %}
+                                <li class="student-item" data-email="{{ student.email }}" draggable="true" role="listitem">
+                                    {{ student.name }}
+                                </li>
+                            {% endfor %}
+                        {% endif %}
                     </ul>
                 </div>
             {% endfor %}
         </div>
     </div>
 
-<!-- Space between the teams and buttons -->
-<div class="mt-4"></div>
-<button id="save-changes-btn" class="btn btn-secondary mt-3">
-    <i class="bi bi-save"></i> Save Changes
-</button>
-    
-<a href="{{ url_for('project_view', class_name=class_name, project_name=project_name) }}" class="btn btn-secondary mt-3">
-    <i class="bi bi-arrow-left me-2"></i> Back to Project
-</a>
+    <div class="mt-4"></div>
+    <button id="save-changes-btn" class="btn btn-secondary mt-3">
+        <span class="spinner-border spinner-border-sm" id="spinner" aria-hidden="true" style="display: none;"></span>
+        <span id="button-text"><i class="bi bi-save"></i> Save Changes</span>
+    </button>
 
+    <a href="{{ url_for('project_view', class_name=class_name, project_name=project_name) }}" class="btn btn-secondary mt-3">
+        <i class="bi bi-arrow-left me-2"></i> Back to Project
+    </a>
 </div>
 
 <script>
-function enableDragAndDrop(container) {
-    const studentItems = container.querySelectorAll('.student-item');
-    const studentLists = container.querySelectorAll('.student-list');
-    // Handle dragstart and dragend for student items
-    studentItems.forEach(item => {
-        item.addEventListener('dragstart', handleDragStart);
-        item.addEventListener('dragend', handleDragEnd);
-    });
-    // Handle dragover and drop for all student lists
-    studentLists.forEach(list => {
-        list.addEventListener('dragover', event => {
-            event.preventDefault(); // Allow drop
-            list.classList.add('drag-over'); // Apply custom visual effect (optional)
+    function enableDragAndDrop(container) {
+        const studentItems = container.querySelectorAll('.student-item');
+        const studentLists = container.querySelectorAll('.student-list');
+        // Handle dragstart and dragend for student items
+        studentItems.forEach(item => {
+            item.addEventListener('dragstart', handleDragStart);
+            item.addEventListener('dragend', handleDragEnd);
         });
-        list.addEventListener('dragleave', event => {
-            list.classList.remove('drag-over'); // Remove visual effect when dragging leaves
+        // Handle dragover and drop for all student lists
+        studentLists.forEach(list => {
+            list.addEventListener('dragover', event => {
+                event.preventDefault(); // Allow drop
+                list.classList.add('drag-over'); // Apply custom visual effect (optional)
+            });
+            list.addEventListener('dragleave', event => {
+                list.classList.remove('drag-over');
+                if (list.querySelectorAll('.student-item').length === 0) {
+                    addNoStudentsMessage(list);
+                }
+ // Remove visual effect when dragging leaves
+            });
+            list.addEventListener('drop', event => {
+                event.preventDefault(); // Prevent default drop action
+                handleDrop(event, list); // Handle drop logic
+                list.classList.remove('drag-over');
+                if (list.querySelectorAll('.student-item').length === 0) {
+                    addNoStudentsMessage(list);
+                }
+// Remove visual effect after drop
+                // Handle empty team messaging
+                if (list.querySelectorAll('.student-item').length === 0) {
+                    addNoStudentsMessage(list);
+                }
+            });
         });
-        list.addEventListener('drop', event => {
-            event.preventDefault(); // Prevent default drop action
-            handleDrop(event, list); // Handle drop logic
-            list.classList.remove('drag-over'); // Remove visual effect after drop
-            // If the list becomes empty, re-add the "No students assigned" message
-            if (list.querySelectorAll('.student-item').length === 0) {
-                const noStudentsMessage = document.createElement('li');
-                noStudentsMessage.className = 'no-students';
-                noStudentsMessage.textContent = 'No students assigned';
-                list.appendChild(noStudentsMessage);
-            }
-        });
-    });
-}
+    }
+    
     function handleDragStart(event) {
         event.dataTransfer.setData('email', event.target.dataset.email);
         event.dataTransfer.setData('name', event.target.textContent.trim());
         event.target.classList.add('dragging');
     }
-function handleDragEnd(event) {
-    event.target.classList.remove('dragging');
-
-    // Check if the list becomes empty after drag
-    const targetList = event.target.closest('.student-list');
-    if (targetList && targetList.querySelectorAll('.student-item').length === 0) {
-        // Add "No students assigned" or "All students assigned" only if not already present
-        if (targetList.id === "students-list") {
-            // For Unassigned Students list, show "All students assigned"
-            if (!targetList.querySelector('.no-students')) {
-                const noStudentsMessage = document.createElement('li');
-                noStudentsMessage.className = 'no-students';
-                noStudentsMessage.textContent = 'All students assigned';
-                targetList.appendChild(noStudentsMessage);
-            }
-        } else {
-            // For other lists, show "No students assigned"
-            if (!targetList.querySelector('.no-students')) {
-                const noStudentsMessage = document.createElement('li');
-                noStudentsMessage.className = 'no-students';
-                noStudentsMessage.textContent = 'No students assigned';
-                targetList.appendChild(noStudentsMessage);
-            }
+    
+    function handleDragEnd(event) {
+        event.target.classList.remove('dragging');
+        // Check and handle empty lists
+        const targetList = event.target.closest('.student-list');
+        if (targetList && targetList.querySelectorAll('.student-item').length === 0) {
+            addNoStudentsMessage(targetList);
         }
     }
-}
-
-function createTeam(teamName) {
-    const teamDiv = document.createElement('div');
-    teamDiv.className = 'team-list';
-    teamDiv.id = `team-${teamName}`;
-    teamDiv.setAttribute('role', 'region');
-    teamDiv.setAttribute('aria-label', teamName);
-
-    // Include "No students assigned" only if not already present
-    teamDiv.innerHTML = `
-        <h2>${teamName}</h2>
-        <ul class="student-list">
-            <li class="no-students">No students assigned</li>
-        </ul>
-    `;
-
-    teamsContainer.appendChild(teamDiv);
-
-    // Enable drag-and-drop functionality for the new team
-    const newTeamList = teamDiv.querySelector('.student-list');
-    enableDragAndDrop(teamDiv);
-}
-
-function handleDrop(event, targetList) {
+    
+    function handleDrop(event, targetList) {
     event.preventDefault();
     const email = event.dataTransfer.getData('email');
     const name = event.dataTransfer.getData('name');
@@ -167,85 +138,140 @@ function handleDrop(event, targetList) {
 
         targetList.appendChild(studentItem);
 
-        // Remove "No students assigned" or "All students assigned" message if it exists
+        // Remove "No students assigned" message from the target list if present
         const noStudentsMessage = targetList.querySelector('.no-students');
-        if (noStudentsMessage) {
-            noStudentsMessage.remove();
-        }
+        if (noStudentsMessage) noStudentsMessage.remove();
 
-        // Remove student from other lists
+        // Remove the student from the source list
         document.querySelectorAll('.student-list').forEach(list => {
             if (list !== targetList) {
                 const student = list.querySelector(`.student-item[data-email="${email}"]`);
                 if (student) student.remove();
 
-                // Check if the list becomes empty
-                if (list.querySelectorAll('.student-item').length === 0) {
-                    // Add appropriate message based on whether it's the Unassigned Students list or another list
-                    if (list.id === "students-list" && !list.querySelector('.no-students')) {
-                        const emptyMessage = document.createElement('li');
-                        emptyMessage.className = 'no-students';
-                        emptyMessage.textContent = 'All students assigned';
-                        list.appendChild(emptyMessage);
-                    } else if (!list.querySelector('.no-students')) {
-                        const emptyMessage = document.createElement('li');
-                        emptyMessage.className = 'no-students';
-                        emptyMessage.textContent = 'No students assigned';
-                        list.appendChild(emptyMessage);
-                    }
+                // Re-add "No students assigned" if the list becomes empty
+                if (list.querySelectorAll('.student-item').length === 0 && !list.querySelector('.no-students')) {
+                    const emptyMessage = document.createElement('li');
+                    emptyMessage.className = 'no-students';
+                    emptyMessage.textContent = 'No students assigned';
+                    list.appendChild(emptyMessage);
                 }
             }
         });
     }
 }
 
-function saveChanges() {
+    function createStudentItem(email, name) {
+        const studentItem = document.createElement('li');
+        studentItem.className = 'student-item';
+        studentItem.draggable = true;
+        studentItem.dataset.email = email;
+        studentItem.textContent = name;
+    
+        // Add drag event listeners
+        studentItem.addEventListener('dragstart', handleDragStart);
+        studentItem.addEventListener('dragend', handleDragEnd);
+        return studentItem;
+    }
+    
+    function removeFromOtherLists(email, targetList) {
+        document.querySelectorAll('.student-list').forEach(list => {
+            if (list !== targetList) {
+                const student = list.querySelector(`.student-item[data-email="${email}"]`);
+                if (student) student.remove();
+    
+                // Handle empty lists
+                if (list.querySelectorAll('.student-item').length === 0) {
+                    addNoStudentsMessage(list);
+                }
+            }
+        });
+    }
+    
+    function addNoStudentsMessage(list) {
+        if (list.querySelectorAll('.student-item').length === 0 && !list.querySelector('.no-students')) {
+            const message = document.createElement('li');
+            message.className = 'no-students';
+            message.textContent = list.id === "students-list" ? 'All students assigned' : 'No students assigned';
+            list.appendChild(message);
+        }
+    }
+    
+    function removeNoStudentsMessage(list) {
+        const noStudentsMessage = list.querySelector('.no-students');
+        if (noStudentsMessage) noStudentsMessage.remove();
+    }
+    
+    function createTeam(teamName) {
+        const teamDiv = document.createElement('div');
+        teamDiv.className = 'team-list';
+        teamDiv.id = `team-${teamName}`;
+        teamDiv.setAttribute('role', 'region');
+        teamDiv.setAttribute('aria-label', teamName);
+    
+        teamDiv.innerHTML = `
+            <h4>${teamName}</h4>
+            <ul class="student-list">
+                <li class="no-students">No students assigned</li>
+            </ul>
+        `;
+        teamsContainer.appendChild(teamDiv);
+    
+        // Enable drag-and-drop for the new team
+        enableDragAndDrop(teamDiv);
+    }
+    
+    function saveChanges() {
     const teams = [];
     const teamElements = document.querySelectorAll('.team-list');
+
     teamElements.forEach(team => {
-        const teamName = team.querySelector('h2').textContent.trim();
+        const teamNameElement = team.querySelector('h4');
+        const teamName = teamNameElement.textContent.trim();
         const studentsInTeam = Array.from(team.querySelectorAll('.student-item')).map(item => item.dataset.email);
 
-        if (teamName !== "Available Students") {
-            teams.push({ teamName, students: studentsInTeam.length ? studentsInTeam : ["No students"] });
+        // Ensure the team is added even if it has no students
+        // This check is important to preserve empty teams
+        if (studentsInTeam.length > 0 || teamName !== "Available Students") {
+            teams.push({
+            teamName,
+            students: studentsInTeam.length > 0 ? studentsInTeam : null,
+        });
         }
     });
-
+    
     fetch('/save-teams', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            teams,
-            class_name: "{{ class_name }}",
-            project_name: "{{ project_name }}"
-        }),
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.status === 'success') {
-            alert('Teams saved successfully!');
-        } else {
-            alert(`Error: ${data.error}`);
-        }
-    })
-    .catch(error => {
-        console.error('Error saving teams:', error);
-        alert('An error occurred while saving changes.');
-    });
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+        teams,
+        class_name: "{{ class_name }}",
+        project_name: "{{ project_name }}"
+    }),
+})
+.then(() => {
+    // Reload the page to show flash messages
+    location.reload();
+})
+.catch(error => {
+    console.error('Error saving teams:', error);
+    alert('An error occurred while saving changes.');
+});
+
 }
 
+
     const teamsContainer = document.getElementById('teams-container');
-    const studentsList = document.getElementById('students-list');
     const saveChangesBtn = document.getElementById('save-changes-btn');
     document.getElementById('create-team-btn').addEventListener('click', () => {
         const teamName = document.getElementById('team_name').value.trim();
-        if (teamName && !document.getElementById(`team-${teamName}`)) {
+        if (teamName && document.getElementById(`team-${teamName}`) === null) {
             createTeam(teamName);
             document.getElementById('team_name').value = '';
         }
     });
     enableDragAndDrop(document);
     saveChangesBtn.addEventListener('click', saveChanges);
+
 </script>
 
 <style>
