@@ -24,14 +24,12 @@
 </div>
 
 <script>
-    // Handle form submission
     const form = document.getElementById('classroom-form');
     const uploadBtn = document.getElementById('upload-btn');
     const spinner = document.getElementById('spinner');
     const buttonText = document.getElementById('button-text');
 
     form.addEventListener('submit', function() {
-        // Show spinner and disable button text
         spinner.style.display = 'inline-block';
         buttonText.style.display = 'none';
         uploadBtn.disabled = true;

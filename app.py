@@ -18,7 +18,6 @@ cred = credentials.Certificate("firebase-key.json")
 firebase_admin.initialize_app(cred)
 db = firestore.Client()
 
-# Ensure uploads directory exists
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'csv', 'xls', 'xlsx'}
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -92,7 +91,7 @@ def login():
                 if session['role'] == 'teacher':
                     return redirect(url_for('teachers_home'))
             else:
-                flash('User not found in the database.', 'warning')  # Flashing warning message
+                flash('User not found in the database.', 'warning') 
 
         except Exception as e:
             flash(f'Login failed: {e}', 'danger')
@@ -144,7 +143,6 @@ def upload():
         class_name = request.form.get('class_name', '').strip()
         file = request.files.get('student_file')
 
-        # Improved Validation
         if not class_name:
             flash('Class name is required.', 'error')
             return redirect(url_for('upload'))
@@ -158,7 +156,6 @@ def upload():
             flash('Only CSV or Excel files are allowed.', 'error')
             return redirect(url_for('upload'))
 
-        # Save file temporarily
         file_path = os.path.join(UPLOAD_FOLDER, file.filename)
         try:
             if not os.path.exists(UPLOAD_FOLDER):
@@ -166,13 +163,11 @@ def upload():
 
             file.save(file_path)
 
-            # Load data into a DataFrame
             if file_ext == '.csv':
                 df = pd.read_csv(file_path)
             else:
                 df = pd.read_excel(file_path)
 
-            # Validate required columns
             required_columns = {'firstname', 'lastname', 'email'}
             if not required_columns.issubset(df.columns):
                 flash(f'File must contain columns: {", ".join(required_columns)}.', 'danger')
@@ -243,7 +238,6 @@ def classroom_view(class_name):
 
 @app.route('/classroom/<class_name>/manage_students')
 def manage_students(class_name):
-    # Fetch students from the Firestore subcollection under classrooms
     classroom_ref = db.collection('classrooms').document(class_name)
     students_ref = classroom_ref.collection('students')
     students = students_ref.stream()
@@ -262,7 +256,6 @@ def manage_students(class_name):
 
 @app.route('/classroom/<class_name>/edit_student/<student_id>', methods=['GET', 'POST'])
 def edit_student(class_name, student_id):
-    # Get the student document from Firestore
     student_ref = db.collection('classrooms').document(class_name).collection('students').document(student_id)
     student_doc = student_ref.get()
 
@@ -271,24 +264,19 @@ def edit_student(class_name, student_id):
         return redirect(url_for('manage_students', class_name=class_name))
 
     student = student_doc.to_dict()
-
-    # Check if the keys are correct
-    print(student)  # Debugging line to check if the student data is loaded correctly
+    print(student) 
 
     if request.method == 'POST':
-        # Get the updated values from the form
         first_name = request.form['first_name']
         last_name = request.form['last_name']
         email = request.form['email']
 
-        # Update the student's information in the classroom's students subcollection
         student_ref.update({
             'firstName': first_name,
             'lastName': last_name,
             'email': email
         })
 
-        # Also update the student's information in the 'users' collection
         user_doc = db.collection('users').document(student_id)
         user_doc.update({
             'name': f"{last_name}, {first_name}",
@@ -310,16 +298,13 @@ def delete_student(class_name, student_id):
         classroom_ref = db.collection('classrooms').document(class_name)
         student_ref = classroom_ref.collection('students').document(student_id)
 
-        # Check if the student exists before trying to delete
         if not student_ref.get().exists:
             print(f"Student {student_id} not found.")
             flash('Student not found in the classroom', 'danger')
             return redirect(url_for('manage_students', class_name=class_name))
-        
-        # Delete the student from Firestore
+
         student_ref.delete()
 
-        # Remove the student from all teams in the Projects collection
         projects_ref = classroom_ref.collection('Projects')
         projects = projects_ref.stream()
 
@@ -327,17 +312,13 @@ def delete_student(class_name, student_id):
             project_ref = projects_ref.document(project.id)
             teams_ref = project_ref.collection('teams')
 
-            # Iterate through all teams and remove the student from any team they are part of
             for team in teams_ref.stream():
                 team_ref = teams_ref.document(team.id)
                 team_data = team_ref.get().to_dict()
 
-                # Sanitize the student_id email before using it as a field name
                 sanitized_student_id = sanitize_email(student_id)
 
-                # Check if the sanitized student_id is part of the team
                 if sanitized_student_id in team_data:
-                    # Remove the student from the team
                     team_ref.update({
                         sanitized_student_id: firestore.DELETE_FIELD
                     })
@@ -346,7 +327,6 @@ def delete_student(class_name, student_id):
                     if not team_ref.get().to_dict():
                         team_ref.delete()
 
-        # Flash success message
         flash('Student has been successfully removed from the classroom', 'success')
         return redirect(url_for('manage_students', class_name=class_name))
     
@@ -363,7 +343,6 @@ def add_student(class_name):
 
         classroom_ref = db.collection('classrooms').document(class_name)
 
-        # Add student to the Firestore classroom students subcollection
         classroom_ref.collection('students').document(email).set({
             'firstName': first_name,
             'lastName': last_name,
@@ -371,10 +350,8 @@ def add_student(class_name):
             'assignedAt': firestore.SERVER_TIMESTAMP
         })
 
-        # Check if the student already exists in the users collection
         user_doc = db.collection('users').document(email)
         if not user_doc.get().exists:
-            # If not, add the student to the 'users' collection
             user_doc.set({
                 'email': email,
                 'role': 'student',
@@ -476,7 +453,6 @@ def project_view(class_name, project_name):
     if not is_authenticated():
         return redirect(url_for('login'))
 
-    # Fetch the project document
     project_ref = db.collection('classrooms').document(class_name).collection('Projects').document(project_name).get()
     if not project_ref.exists:
         flash("Project not found.")
@@ -484,27 +460,21 @@ def project_view(class_name, project_name):
 
     project_data = project_ref.to_dict()
 
-    # Format the due date to remove timezone and display in a readable format
     due_date = project_data.get('dueDate', None)
     if due_date:
-        # Convert Firestore timestamp (with timezone) to a regular datetime string
         due_date = due_date.replace(tzinfo=None).strftime('%Y-%m-%d %H:%M:%S')
 
-    # Fetch the classroom document
     classroom_ref = db.collection('classrooms').document(class_name).get()
     teacher_email = classroom_ref.to_dict().get('teacherEmail', '')
     student_emails = [s.id for s in db.collection('classrooms').document(class_name).collection('students').stream()]
 
-    # Check if the user has access to the project
     if session['user'] != teacher_email and session['user'] not in student_emails:
         flash("You do not have access to this project.")
         return redirect(url_for('login'))
 
-    # Fetch teams for the project
     teams_ref = db.collection('classrooms').document(class_name).collection('Projects').document(project_name).collection('teams').stream()
     teams = {team.id: team.to_dict() for team in teams_ref}
 
-    # Check if the student is assigned to any team
     user_role = session.get('role')
     student_team_assigned = None
     if user_role == 'student' and session['user'] in student_emails:
@@ -529,7 +499,6 @@ def add_team(class_name, project_name):
     if not is_authenticated():
         return redirect(url_for('login'))
 
-    # Check teacher permission
     classroom_ref = db.collection('classrooms').document(class_name).get()
     if not classroom_ref.exists or classroom_ref.to_dict()['teacherEmail'] != session['user']:
         flash("You do not have permission to add teams.")
@@ -543,7 +512,6 @@ def add_team(class_name, project_name):
             flash('Team name and at least one student are required.')
             return redirect(url_for('add_team', class_name=class_name, project_name=project_name))
 
-        # Prevent duplicates in the same project
         teams_ref = db.collection('classrooms').document(class_name).collection('Projects').document(project_name).collection('teams').stream()
         assigned_students = {student_email for team in teams_ref for student_email in team.to_dict().keys()}
 
@@ -552,7 +520,6 @@ def add_team(class_name, project_name):
                 flash(f"Student {student_email} is already assigned to a team.")
                 return redirect(url_for('add_team', class_name=class_name, project_name=project_name))
 
-        # Update or create the team
         team_data = {}
         for student_email in selected_students:
             student_ref = db.collection('classrooms').document(class_name).collection('students').document(student_email).get()
@@ -569,7 +536,6 @@ def add_team(class_name, project_name):
         flash(f'Team "{team_name}" updated successfully!')
         return redirect(url_for('add_team', class_name=class_name, project_name=project_name))
 
-    # Fetch students and teams
     all_students = db.collection('classrooms').document(class_name).collection('students').stream()
     teams_ref = db.collection('classrooms').document(class_name).collection('Projects').document(project_name).collection('teams').stream()
     
@@ -590,7 +556,6 @@ def add_team(class_name, project_name):
         for student in students_in_team:
             assigned_students[student['email']] = True
 
-    # Filter available students
     available_students = [s for s in available_students if not assigned_students[s['email']]]
     
     return render_template(
@@ -620,10 +585,8 @@ def save_teams():
             flash("Class name or project name missing.", "danger")
             return redirect(request.referrer)
 
-        # Reference to the Firestore collection for teams
         teams_collection_ref = db.collection('classrooms').document(class_name).collection('Projects').document(project_name).collection('teams')
 
-        # Fetch existing teams from Firestore
         existing_teams = teams_collection_ref.stream()
         existing_team_data = {team.id: team.to_dict() for team in existing_teams}
 
@@ -647,28 +610,22 @@ def save_teams():
 
                 processed_students.add(student_email)
 
-                # Fetch student details from Firestore
                 student_ref = db.collection('classrooms').document(class_name).collection('students').document(student_email).get()
                 if student_ref.exists:
                     student_info = student_ref.to_dict()
-                    # Save student details in the team data
                     team_data[student_email] = f"{student_info['lastName']}, {student_info['firstName']}"
 
-                    # Remove the student from their old team if they are being moved
                     for old_team_name, old_team_data in existing_team_data.items():
                         if student_email in old_team_data:
                             del existing_team_data[old_team_name][student_email]
 
-                            # Only update the team if it still has members
                             if existing_team_data[old_team_name]:
                                 teams_collection_ref.document(old_team_name).set(existing_team_data[old_team_name])
                             else:
-                                # Skip deletion of empty teams
                                 flash(f"Team '{old_team_name}' is now empty, but will not be deleted.", "warning")
                 else:
                     return jsonify({"error": f"Student {student_email} does not exist in the classroom."}), 400
 
-            # Save the new team data
             teams_collection_ref.document(team_name).set(team_data)
 
         flash("Teams saved successfully!", "success")
@@ -692,7 +649,6 @@ def team_view(class_name, project_name, team_name):
     team = team_ref.to_dict()
     members_data = [f"{name}" for name in team.values()]
 
-    # Verify student access
     if session['role'] == 'student' and session['user'] not in team:
         flash("You are not a member of this team.")
         return redirect(url_for('project_view', class_name=class_name, project_name=project_name))

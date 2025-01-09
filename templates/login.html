@@ -9,16 +9,16 @@
     <style>
 body {
     display: flex;
-    justify-content: center; /* Horizontally center */
-    align-items: center;    /* Vertically center */
-    min-height: 100vh;      /* Ensure the body covers the full height of the viewport */
-    margin: 0;              /* Remove default margin */
-    background-color: #f0f0f0; /* Optional: Add background color for contrast */
+    justify-content: center; 
+    align-items: center;    
+    min-height: 100vh;      
+    margin: 0;             
+    background-color: #f0f0f0; 
 }
 
 .login-container {
     max-width: 400px;
-    width: 100%;            /* Ensure the container adapts to small screens */
+    width: 100%;            
     padding: 30px;
     background-color: white;
     border-radius: 8px;
@@ -31,23 +31,23 @@ body {
 }
 
 .btn-google {
-    background-color: #000000; /* Button color remains black */
-    color: white;             /* Text color */
+    background-color: #000000;
+    color: white;            
     width: 100%;
     padding: 12px;
     border: none;
     border-radius: 5px;
     font-size: 16px;
     cursor: pointer;
-    transition: all 0.3s ease; /* Smooth transitions */
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+    transition: all 0.3s ease; 
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); 
 }
 
 .btn-google:hover {
-    background-color: #454343; /* Slightly lighter shade of black */
+    background-color: #454343; 
     color: white;         
-    transform: scale(1.05);    /* Slight enlargement */
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2); /* Stronger shadow for hover effect */
+    transform: scale(1.05);   
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2); 
 }
 
 .btn-google:active {
@@ -106,7 +106,7 @@ body {
         signInWithPopup(auth, provider)
             .then((result) => {
                 const user = result.user;
-                const token = user.getIdToken(); // Get Firebase ID token
+                const token = user.getIdToken(); 
 
                 token.then(idToken => {
                     console.log("Google login ID token: ", idToken);
@@ -122,14 +122,13 @@ body {
                         console.log('Backend response:', data);
                         if (data.success) {
                             if (data.role === 'teacher') {
-                                window.location.href = '/teachers_home'; // Redirect to teacher's home page
+                                window.location.href = '/teachers_home'; 
                             } else if (data.role === 'student') {
-                                window.location.href = '/students_home'; // Redirect to student's home page
+                                window.location.href = '/students_home'; 
                             } else {
                                 console.log('Invalid role:', data.role);
                             }
                         } else {
-                            // Display the error message on the page
                             displayErrorMessage(data.message || 'An error occurred during login.');
                         }
                     })
@@ -155,16 +154,16 @@ body {
         const existingAlert = loginContainer.querySelector('.alert');
         
         if (existingAlert) {
-            existingAlert.textContent = message; // Update the message if alert already exists
-            existingAlert.classList.remove('alert-info', 'alert-danger'); // Reset classes
-            existingAlert.classList.add('alert-danger'); // Add error class
+            existingAlert.textContent = message; 
+            existingAlert.classList.remove('alert-info', 'alert-danger'); 
+            existingAlert.classList.add('alert-danger'); 
         } else {
             // Create a new alert if it doesn't exist
             const alertDiv = document.createElement('div');
             alertDiv.className = 'alert alert-danger';
             alertDiv.role = 'alert';
             alertDiv.textContent = message;
-            titleElement.insertAdjacentElement('afterend', alertDiv); // Insert below the title
+            titleElement.insertAdjacentElement('afterend', alertDiv); 
         }
     }
 

@@ -76,25 +76,22 @@
         // Handle dragover and drop for all student lists
         studentLists.forEach(list => {
             list.addEventListener('dragover', event => {
-                event.preventDefault(); // Allow drop
-                list.classList.add('drag-over'); // Apply custom visual effect (optional)
+                event.preventDefault();
+                list.classList.add('drag-over'); 
             });
             list.addEventListener('dragleave', event => {
                 list.classList.remove('drag-over');
                 if (list.querySelectorAll('.student-item').length === 0) {
                     addNoStudentsMessage(list);
                 }
- // Remove visual effect when dragging leaves
             });
             list.addEventListener('drop', event => {
-                event.preventDefault(); // Prevent default drop action
-                handleDrop(event, list); // Handle drop logic
+                event.preventDefault(); 
+                handleDrop(event, list); 
                 list.classList.remove('drag-over');
                 if (list.querySelectorAll('.student-item').length === 0) {
                     addNoStudentsMessage(list);
                 }
-// Remove visual effect after drop
-                // Handle empty team messaging
                 if (list.querySelectorAll('.student-item').length === 0) {
                     addNoStudentsMessage(list);
                 }
@@ -110,7 +107,6 @@
     
     function handleDragEnd(event) {
         event.target.classList.remove('dragging');
-        // Check and handle empty lists
         const targetList = event.target.closest('.student-list');
         if (targetList && targetList.querySelectorAll('.student-item').length === 0) {
             addNoStudentsMessage(targetList);
@@ -123,7 +119,6 @@
     const name = event.dataTransfer.getData('name');
     if (!email || !name) return;
 
-    // Avoid duplicate entries in the target list
     const existingStudent = targetList.querySelector(`.student-item[data-email="${email}"]`);
     if (!existingStudent) {
         const studentItem = document.createElement('li');
@@ -230,7 +225,6 @@
         const studentsInTeam = Array.from(team.querySelectorAll('.student-item')).map(item => item.dataset.email);
 
         // Ensure the team is added even if it has no students
-        // This check is important to preserve empty teams
         if (studentsInTeam.length > 0 || teamName !== "Available Students") {
             teams.push({
             teamName,
@@ -238,7 +232,7 @@
         });
         }
     });
-    
+
     fetch('/save-teams', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -249,7 +243,6 @@
     }),
 })
 .then(() => {
-    // Reload the page to show flash messages
     location.reload();
 })
 .catch(error => {
@@ -281,15 +274,14 @@
         gap: 20px;
     }
 
-    /* Fixed Unassigned Students section */
     .unassigned-students-section {
-        flex: 1; /* Take up available space */
-        max-width: 300px; /* You can adjust this width */
+        flex: 1; 
+        max-width: 300px; 
         border: 2px solid #ddd;
         padding: 15px;
         background-color: #f9f9f9;
         border-radius: 8px;
-        min-height: 200px; /* Ensure some height */
+        min-height: 200px; 
     }
 
     .unassigned-students-section h4 {
