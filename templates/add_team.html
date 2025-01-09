@@ -54,10 +54,10 @@
     </div>
 
     <div class="mt-4"></div>
-    <button id="save-changes-btn" class="btn btn-secondary mt-3">
-        <span class="spinner-border spinner-border-sm" id="spinner" aria-hidden="true" style="display: none;"></span>
-        <span id="button-text"><i class="bi bi-save"></i> Save Changes</span>
-    </button>
+    <button id="save-changes-btn" class="btn btn-secondary mt-3" onclick="saveChanges(this)">
+        <span class="spinner-border spinner-border-sm" id="save-spinner" aria-hidden="true" style="display: none;"></span>
+        <span id="save-button-text"><i class="bi bi-save"></i> Save Changes</span>
+    </button>    
 
     <a href="{{ url_for('project_view', class_name=class_name, project_name=project_name) }}" class="btn btn-secondary mt-3">
         <i class="bi bi-arrow-left me-2"></i> Back to Project
@@ -215,44 +215,54 @@
         enableDragAndDrop(teamDiv);
     }
     
-    function saveChanges() {
-    const teams = [];
-    const teamElements = document.querySelectorAll('.team-list');
+    function saveChanges(button) {
+        const spinner = document.getElementById('save-spinner');
+        const buttonText = document.getElementById('save-button-text');
 
-    teamElements.forEach(team => {
-        const teamNameElement = team.querySelector('h4');
-        const teamName = teamNameElement.textContent.trim();
-        const studentsInTeam = Array.from(team.querySelectorAll('.student-item')).map(item => item.dataset.email);
+        // Show spinner and disable the button
+        spinner.style.display = 'inline-block';
+        buttonText.style.display = 'none';
+        button.disabled = true;
 
-        // Ensure the team is added even if it has no students
-        if (studentsInTeam.length > 0 || teamName !== "Available Students") {
-            teams.push({
-            teamName,
-            students: studentsInTeam.length > 0 ? studentsInTeam : null,
+        const teams = [];
+        const teamElements = document.querySelectorAll('.team-list');
+
+        teamElements.forEach(team => {
+            const teamNameElement = team.querySelector('h4');
+            const teamName = teamNameElement.textContent.trim();
+            const studentsInTeam = Array.from(team.querySelectorAll('.student-item')).map(item => item.dataset.email);
+
+            if (studentsInTeam.length > 0 || teamName !== "Available Students") {
+                teams.push({
+                    teamName,
+                    students: studentsInTeam.length > 0 ? studentsInTeam : null,
+                });
+            }
         });
+
+        fetch('/save-teams', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            teams,
+            class_name: "{{ class_name }}",
+            project_name: "{{ project_name }}"
+        }),
+    })
+    .then(response => {
+        if (response.redirected) {
+            window.location.href = response.url; // Redirect to the Flask endpoint
         }
+    })
+    .catch(error => {
+        console.error('Error saving teams:', error);
+        alert('An error occurred while saving changes.');
+
+        spinner.style.display = 'none';
+        buttonText.style.display = 'inline-block';
+        button.disabled = false;
     });
-
-    fetch('/save-teams', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-        teams,
-        class_name: "{{ class_name }}",
-        project_name: "{{ project_name }}"
-    }),
-})
-.then(() => {
-    location.reload();
-})
-.catch(error => {
-    console.error('Error saving teams:', error);
-    alert('An error occurred while saving changes.');
-});
-
 }
-
-
     const teamsContainer = document.getElementById('teams-container');
     const saveChangesBtn = document.getElementById('save-changes-btn');
     document.getElementById('create-team-btn').addEventListener('click', () => {

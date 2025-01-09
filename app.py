@@ -631,6 +631,7 @@ def add_team(class_name, project_name):
         students=available_students,
         teams=teams
     )
+
 @app.route('/save-teams', methods=['POST'])
 def save_teams():
     try:
