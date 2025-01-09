@@ -9,6 +9,10 @@
     <p><strong>Due Date:</strong> {{ due_date }}</p>
 
     {% if session['role'] == 'teacher' %}
+    <a href="{{ url_for('edit_project', class_name=class_name, project_name=project_name) }}" class="btn btn-secondary mt-3">
+        <i class="bi bi-pencil-square"></i> Edit Project
+    </a>
+    
         <a href="{{ url_for('add_team', class_name=class_name, project_name=project_name) }}" class="btn btn-secondary mt-3">
             <i class="bi bi-person-plus-fill"></i> Manage Teams
         </a>

@@ -448,6 +448,72 @@ def add_project(class_name):
 
     return render_template('add_project.html', class_name=class_name, current_date_time=current_date_time)
 
+@app.route('/classroom/<class_name>/edit_project/<project_name>', methods=['GET', 'POST'])
+def edit_project(class_name, project_name):
+    if not is_authenticated():
+        flash("Please log in to continue.", "danger")
+        return redirect(url_for('login'))
+
+    classroom_ref = db.collection('classrooms').document(class_name).get()
+    if not classroom_ref.exists or classroom_ref.to_dict()['teacherEmail'] != session['user']:
+        flash("You do not have permission to edit this project.", "danger")
+        return redirect(url_for('login'))
+
+    project_ref = db.collection('classrooms').document(class_name).collection('Projects').document(project_name)
+    project = project_ref.get()
+    if not project.exists:
+        flash("Project does not exist.", "danger")
+        return redirect(url_for('classroom_view', class_name=class_name))
+
+    current_date_time = datetime.now().strftime('%Y-%m-%dT%H:%M')
+
+    # Convert Firestore timestamp to ISO format for datetime-local input
+    project_data = project.to_dict()
+    firestore_due_date = project_data.get('dueDate')
+    formatted_due_date = (
+        firestore_due_date.strftime('%Y-%m-%dT%H:%M')
+        if firestore_due_date else current_date_time
+    )
+
+    if request.method == 'POST':
+        updated_project_name = request.form['project_name']
+        updated_description = request.form['description']
+        updated_due_date_str = request.form['due_date']
+
+        if not updated_project_name:
+            flash("Project name is required.", "warning")
+            return redirect(url_for('edit_project', class_name=class_name, project_name=project_name))
+
+        updated_due_date = None
+        if updated_due_date_str:
+            try:
+                updated_due_date = datetime.strptime(updated_due_date_str, '%Y-%m-%dT%H:%M')
+                if updated_due_date <= datetime.now():
+                    flash("Due date must be in the future.", "warning")
+                    return redirect(url_for('edit_project', class_name=class_name, project_name=project_name))
+            except ValueError:
+                flash("Invalid date and time format. Use YYYY-MM-DDTHH:MM.", "danger")
+                return redirect(url_for('edit_project', class_name=class_name, project_name=project_name))
+
+        # Update project details
+        project_ref.update({
+            'projectName': updated_project_name,
+            'description': updated_description,
+            'dueDate': updated_due_date,
+        })
+
+        flash(f"Project '{updated_project_name}' updated successfully.", "success")
+        return redirect(url_for('project_view', class_name=class_name, project_name=updated_project_name))
+
+    return render_template(
+        'edit_project.html',
+        class_name=class_name,
+        project_name=project_name,
+        project_description=project_data.get('description', ''),
+        due_date=formatted_due_date,
+        current_date_time=current_date_time
+    )
+
 @app.route('/classroom/<class_name>/project/<project_name>')
 def project_view(class_name, project_name):
     if not is_authenticated():
